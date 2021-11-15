@@ -1992,7 +1992,7 @@ Stability_Score <- function(X,Y,Z,id,time,mtry,ntree, sto="BM",method="MERF", et
   SS <- as.data.frame(ss)
   colnames(SS) = nvars
   rownames(SS) = eta
-  return(SS)
+  return(list(score = SS, models = list(sortie1, sortie2)))
 }
 
 
