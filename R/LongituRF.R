@@ -1962,7 +1962,7 @@ DataLongGenerator <- function(n=50,p=6,G=6){
 #'
 #' @return A matrix with all the stability scores corresponding to the eta and nvars values. The $i$th row corresponds to the $i$th value of eta while the $i$th column corresponds to the $i$ value of nvars.
 #
-Stability_Score <- function(X,Y,Z,id,time,mtry,ntree, sto="BM",method="MERF", eta = c(1:ncol(X)),nvars=c(1:ncol(X))){
+Stability_Score <- function(X,Y,Z,id,time,mtry,ntree, sto="BM",method="MERF", eta = c(1:ncol(X)),nvars=c(1:ncol(X)), only_score = TRUE){
 
   if (method=="REEMforest"){
     sortie1 <- REEMforest(X=X,Y=Y,Z=Z,id=id,time=time,mtry=mtry,ntree=ntree,sto=sto)
@@ -1992,7 +1992,11 @@ Stability_Score <- function(X,Y,Z,id,time,mtry,ntree, sto="BM",method="MERF", et
   SS <- as.data.frame(ss)
   colnames(SS) = nvars
   rownames(SS) = eta
-  return(list(score = SS, models = list(sortie1, sortie2)))
+  if(only_score){
+    return(SS)
+  } else{
+    return(list(score = SS, models = list(sortie1, sortie2)))
+  }
 }
 
 
