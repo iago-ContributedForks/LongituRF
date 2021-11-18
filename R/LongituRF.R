@@ -929,7 +929,7 @@ Moy_exp <- function(id,Btilde,sigmahat,Phi,Y,Z, alpha, time, sigma2){
 #' (S)MERT algorithm
 #'
 #'
-#' (S)MERT is an adaptation of the random forest regression method to longitudinal data introduced by Hajjem et. al. (2011) <doi:10.1016/j.spl.2010.12.003>.
+#' (S)MERT is an adaptation of the regression trees method to longitudinal data introduced by Hajjem et. al. (2011) <doi:10.1016/j.spl.2010.12.003>.
 #' The model has been improved by Capitaine et. al. (2020) <doi:10.1177/0962280220946080> with the addition of a stochastic process.
 #' The algorithm will estimate the parameters of the following semi-parametric stochastic mixed-effects model: \deqn{Y_i(t)=f(X_i(t))+Z_i(t)\beta_i + \omega_i(t)+\epsilon_i}
 #' with \eqn{Y_i(t)} the output at time \eqn{t} for the \eqn{i}th individual; \eqn{X_i(t)} the input predictors (fixed effects) at time \eqn{t} for the \eqn{i}th individual;
@@ -1957,6 +1957,7 @@ DataLongGenerator <- function(n=50,p=6,G=6){
 #' @param method [string]: Defines the method to be used, can be either "MERF" or "REEMforest".
 #' @param eta [numeric]: The size of the neighborhood for the stability score. Can be a vector, in this case, returns the stability scores corresponding to all the values of the vector.
 #' @param nvars [numeric]: The number of variables to consider among the most impotant variables. Can be a vector, in this case, the function returns the stability scores corresponding to all the values of the vector.
+#' @param only_score [logical]: Asks if returning just the matrix with the stability scores (default) or should also return the 2 models computed.
 #'
 #' @export
 #'
