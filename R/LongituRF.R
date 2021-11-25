@@ -17,8 +17,10 @@
 #' @param time [vector]: Is the vector of the measurement times associated with the trajectories in \code{Y},\code{Z} and \code{X}.
 #' @param sto [character]: Defines the covariance function of the stochastic process, can be either \code{"none"} for no stochastic process, \code{"BM"} for Brownian motion, \code{OrnUhl} for standard Ornstein-Uhlenbeck process, \code{BBridge} for Brownian Bridge, \code{fbm} for Fractional Brownian motion; can also be a function defined by the user.
 #' @param delta [numeric]: The algorithm stops when the difference in log likelihood between two iterations is smaller than \code{delta}. The default value is set to O.O01
+#' @param conditional [logical]: Determines if the random forest algorithm is the one implemented by Breiman (2001) and available in \code{\link[randomForest]{randomForest}}, which is the default \code{FALSE}, or if it is the implemented by Strobl et al. (2009) using conditional inference trees in \code{\link[party]{cforest}}.
 #'
 #' @import randomForest
+#' @import party
 #' @import stats
 #' @return A fitted (S)MERF model which is a list of the following elements: \itemize{
 #' \item \code{forest:} Random forest obtained at the last iteration.
@@ -36,6 +38,16 @@
 #'
 #' @export
 #'
+#'
+#' @references 
+#' Ahlem Hajjem, François Bellavance, and Denis Larocque (2014). Mixed-effects random forest for clustered data. Journal of Statistical Computation and Simulation, 84(6), 1313–1328. doi:\href{https://doi.org/10.1080/00949655.2012.741599}{10.1080/00949655.2012.741599}
+#'
+#' Louis Capitaine, Robin Genuer, and Rodolphe Thiébaut (2020). Random forests for high-dimensional longitudinal data. Statistical Methods in Medical Research, 096228022094608. doi:\href{https://doi.org/10.1177/0962280220946080}{10.1177/0962280220946080}
+#'
+#' Leo Breiman (2001). Random Forests. Machine Learning, 45(1), 5–32.
+#'
+#' Carolin Strobl, Torsten Hothorn and Achim Zeileis (2009) Party on! The R Journal, 1(2), p. 14. doi:\href{https://doi.org/10.32614/RJ-2009-013}{10.32614/RJ-2009-013}.
+#'
 #' @examples
 #' set.seed(123)
 #' data <- DataLongGenerator(n=20) # Generate the data composed by n=20 individuals.
@@ -50,7 +62,7 @@
 #' smerf$OOB # OOB error at each iteration.
 #'
 #'
-MERF <- function(X,Y,id,Z,iter=100,mtry=ceiling(ncol(X)/3),ntree=500, time, sto, delta = 0.001){
+MERF <- function(X,Y,id,Z,iter=100,mtry=ceiling(ncol(X)/3),ntree=500, time, sto, delta = 0.001, conditional = FALSE){
   q <- dim(Z)[2]
   nind <- length(unique(id))
   btilde <- matrix(0,nind,q) #### Pour la ligne i, on a les effets al?atoires de l'individu i
@@ -65,6 +77,9 @@ MERF <- function(X,Y,id,Z,iter=100,mtry=ceiling(ncol(X)/3),ntree=500, time, sto,
   inc <- 1
   OOB <- NULL
 
+  if(!is.logical(conditional) || length(conditional) != 1 || is.na(conditional)){
+	  conditional <- FALSE
+  }
   if (class(sto)=="character"){
     if (sto=="fbm"){
       id_omega <- matrix(0,nind,length(unique(time)))
@@ -87,9 +102,15 @@ MERF <- function(X,Y,id,Z,iter=100,mtry=ceiling(ncol(X)/3),ntree=500, time, sto,
           ystar[indiv] <- Y[indiv]- Z[indiv,, drop=FALSE]%*%btilde[k,]- omega[indiv]
         }
 
-        forest <- randomForest(X,ystar,mtry=mtry,ntree=ntree, importance = TRUE) ### on construit l'arbre
-        fhat <- predict(forest) #### pr?diction avec l'arbre
-        OOB[i] <- forest$mse[ntree]
+	if(!conditional){
+		forest <- randomForest(X,ystar,mtry=mtry,ntree=ntree, importance = TRUE) ### on construit l'arbre
+		fhat <- predict(forest) #### pr?diction avec l'arbre
+		OOB[i] <- forest$mse[ntree]
+	} else{
+		citdata <- cbind(ystar, X)
+		forest <- cforest(ystar ~ ., data = citdata, controls = cforest_unbiased(mtry = mtry, ntree = ntree))
+		fhat <- predict(forest, OOB = TRUE, type = "response") #### pr?diction avec l'arbre
+	}
         for (k in 1:nind){ ### calcul des effets al?atoires par individu
           indiv <- which(id==unique(id)[k])
           K <- cov.fbm(time[indiv], h)
@@ -109,7 +130,11 @@ MERF <- function(X,Y,id,Z,iter=100,mtry=ceiling(ncol(X)/3),ntree=500, time, sto,
         if (i>1) inc <- (Vrai[i-1]-Vrai[i])/Vrai[i-1]
         if (inc < delta) {
           print(paste0("stopped after ", i, " iterations."))
+	if(!conditional){
           sortie <- list(forest=forest,random_effects=btilde,var_random_effects=Btilde,sigma=sigmahat,sigma_sto=sigma2, id_btilde=unique(id), sto= sto, vraisemblance = Vrai,id=id, time =time, Hurst=h, OOB =OOB, omega=omega2)
+	} else {
+          sortie <- list(forest=forest,random_effects=btilde,var_random_effects=Btilde,sigma=sigmahat,sigma_sto=sigma2, id_btilde=unique(id), sto= sto, vraisemblance = Vrai,id=id, time =time, Hurst=h, omega=omega2)
+	}
           class(sortie)<-"longituRF"
           return(sortie)
         }

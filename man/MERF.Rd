@@ -14,7 +14,8 @@ MERF(
   ntree = 500,
   time,
   sto,
-  delta = 0.001
+  delta = 0.001,
+  conditional = FALSE
 )
 }
 \arguments{
@@ -37,6 +38,8 @@ MERF(
 \item{sto}{[character]: Defines the covariance function of the stochastic process, can be either \code{"none"} for no stochastic process, \code{"BM"} for Brownian motion, \code{OrnUhl} for standard Ornstein-Uhlenbeck process, \code{BBridge} for Brownian Bridge, \code{fbm} for Fractional Brownian motion; can also be a function defined by the user.}
 
 \item{delta}{[numeric]: The algorithm stops when the difference in log likelihood between two iterations is smaller than \code{delta}. The default value is set to O.O01}
+
+\item{conditional}{[logical]: Determines if the random forest algorithm is the one implemented by Breiman (2001) and available in \code{\link[randomForest]{randomForest}}, which is the default \code{FALSE}, or if it is the implemented by Strobl et al. (2009) using conditional inference trees in \code{\link[party]{cforest}}.}
 }
 \value{
 A fitted (S)MERF model which is a list of the following elements: \itemize{
@@ -75,4 +78,13 @@ plot(smerf$Vraisemblance) # evolution of the log-likelihood.
 smerf$OOB # OOB error at each iteration.
 
 
+}
+\references{
+Ahlem Hajjem, François Bellavance, and Denis Larocque (2014). Mixed-effects random forest for clustered data. Journal of Statistical Computation and Simulation, 84(6), 1313–1328. doi:\href{https://doi.org/10.1080/00949655.2012.741599}{10.1080/00949655.2012.741599}
+
+Louis Capitaine, Robin Genuer, and Rodolphe Thiébaut (2020). Random forests for high-dimensional longitudinal data. Statistical Methods in Medical Research, 096228022094608. doi:\href{https://doi.org/10.1177/0962280220946080}{10.1177/0962280220946080}
+
+Leo Breiman (2001). Random Forests. Machine Learning, 45(1), 5–32.
+
+Carolin Strobl, Torsten Hothorn and Achim Zeileis (2009) Party on! The R Journal, 1(2), p. 14. doi:\href{https://doi.org/10.32614/RJ-2009-013}{10.32614/RJ-2009-013}.
 }
