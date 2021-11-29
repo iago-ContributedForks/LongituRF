@@ -1041,6 +1041,17 @@ Moy_exp <- function(id,Btilde,sigmahat,Phi,Y,Z, alpha, time, sigma2){
 #'
 #' @export
 #'
+#'
+#' @references 
+#' Ahlem Hajjem, François Bellavance, and Denis Larocque (2011). Mixed effects regression trees for clustered data. Statistics & Probability Letters, 81(4), 451–459. doi:\href{https://doi.org/10.1016/j.spl.2010.12.003}{10.1016/j.spl.2010.12.003}
+#'
+#' Louis Capitaine, Robin Genuer, and Rodolphe Thiébaut (2020). Random forests for high-dimensional longitudinal data. Statistical Methods in Medical Research, 096228022094608. doi:\href{https://doi.org/10.1177/0962280220946080}{10.1177/0962280220946080}
+#'
+#' Leo Breiman (2001). Random Forests. Machine Learning, 45(1), 5–32.
+#'
+#' Torsten Hothorn, Kurt Hornik and Achim Zeileis (2006). Unbiased Recursive Partitioning: A Conditional Inference Framework. Journal of Computational and Graphical Statistics, 15(3), 651--674.
+#'
+#'
 #' @examples
 #' set.seed(123)
 #' data <- DataLongGenerator(n=20) # Generate the data composed by n=20 individuals.
