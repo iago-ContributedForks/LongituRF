@@ -973,7 +973,7 @@ Moy_exp <- function(id,Btilde,sigmahat,Phi,Y,Z, alpha, time, sigma2){
 #' # Train a SMERF model on the generated data. Should take ~ 50 secondes
 #' # The data are generated with a Brownian motion,
 #' # so we use the parameter sto="BM" to specify a Brownian motion as stochastic process
-#' smert <- MERF(X=data$X,Y=data$Y,Z=data$Z,id=data$id,time=data$time,sto="BM")
+#' smert <- MERT(X=data$X,Y=data$Y,Z=data$Z,id=data$id,time=data$time,sto="BM")
 #' smert$forest # is the fitted random forest (obtained at the last iteration).
 #' smert$random_effects # are the predicted random effects for each individual.
 #' smert$omega # are the predicted stochastic processes.
@@ -1036,8 +1036,8 @@ MERT <- function(X,Y,id,Z,iter=100,time, sto, delta = 0.001){
       ystar[indiv] <- Y[indiv]- Z[indiv,, drop=FALSE]%*%btilde[k,]- omega[indiv]
     }
 
-    tree <- rpart(ystar~.,X) ### on construit l'arbre
-    fhat <- predict(tree, X) #### pr?diction avec l'arbre
+    tree <- rpart(ystar~.,as.data.frame(X)) ### on construit l'arbre
+    fhat <- predict(tree, as.data.frame(X)) #### pr?diction avec l'arbre
     for (k in 1:nind){ ### calcul des effets al?atoires par individu
       indiv <- which(id==unique(id)[k])
       K <- sto_analysis(sto,time[indiv])
@@ -1071,7 +1071,7 @@ MERT <- function(X,Y,id,Z,iter=100,time, sto, delta = 0.001){
 #' (S)REEMtree algorithm
 #'
 #'
-#' (S)REEMtree is an adaptation of the random forest regression method to longitudinal data introduced by Sela and Simonoff. (2012) <doi:10.1007/s10994-011-5258-3>.
+#' (S)REEMtree is an adaptation of the random-effects regression trees method to longitudinal data introduced by Sela and Simonoff. (2012) <doi:10.1007/s10994-011-5258-3>.
 #' The algorithm will estimate the parameters of the following semi-parametric stochastic mixed-effects model: \deqn{Y_i(t)=f(X_i(t))+Z_i(t)\beta_i + \omega_i(t)+\epsilon_i}
 #' with \eqn{Y_i(t)} the output at time \eqn{t} for the \eqn{i}th individual; \eqn{X_i(t)} the input predictors (fixed effects) at time \eqn{t} for the \eqn{i}th individual;
 #' \eqn{Z_i(t)} are the random effects at time \eqn{t} for the \eqn{i}th individual; \eqn{\omega_i(t)} is the stochastic process at time \eqn{t} for the \eqn{i}th individual
@@ -1093,7 +1093,7 @@ MERT <- function(X,Y,id,Z,iter=100,time, sto, delta = 0.001){
 #'
 #'
 #'
-#' @return A fitted (S)MERF model which is a list of the following elements: \itemize{
+#' @return A fitted (S)REEMtree model which is a list of the following elements: \itemize{
 #' \item \code{forest:} Tree obtained at the last iteration.
 #' \item \code{random_effects :} Predictions of random effects for different trajectories.
 #' \item \code{id_btilde:} Identifiers of individuals associated with the predictions \code{random_effects}.
@@ -1114,8 +1114,7 @@ MERT <- function(X,Y,id,Z,iter=100,time, sto, delta = 0.001){
 #' # Train a SREEMtree model on the generated data.
 #' # The data are generated with a Brownian motion,
 #' # so we use the parameter sto="BM" to specify a Brownian motion as stochastic process
-#' X.fixed.effects <- as.data.frame(data$X)
-#' sreemt <- REEMtree(X=X.fixed.effects,Y=data$Y,Z=data$Z,id=data$id,time=data$time,
+#' sreemt <- REEMtree(X=data$X,Y=data$Y,Z=data$Z,id=data$id,time=data$time,
 #' sto="BM", delta=0.0001)
 #' sreemt$forest # is the fitted random forest (obtained at the last iteration).
 #' sreemt$random_effects # are the predicted random effects for each individual.
@@ -1146,9 +1145,9 @@ REEMtree <- function(X,Y,id,Z,iter=10, time, sto, delta = 0.001){
           ystar[indiv] <- Y[indiv]- Z[indiv,, drop=FALSE]%*%btilde[k,]
         }
 
-        tree <- rpart(ystar~.,X)
+        tree <- rpart(ystar~.,as.data.frame(X))
         Phi <- matrix(0,length(Y), length(unique(tree$where)))
-        feuilles <- predict(tree,X)
+        feuilles <- predict(tree,as.data.frame(X))
         leaf <- unique(feuilles)
         for (p in 1:length(leaf)){
           w <- which(feuilles==leaf[p])
@@ -1194,9 +1193,9 @@ REEMtree <- function(X,Y,id,Z,iter=10, time, sto, delta = 0.001){
       ystar[indiv] <- Y[indiv]- Z[indiv,, drop=FALSE]%*%btilde[k,]- omega[indiv]
     }
 
-    tree <- rpart(ystar~.,X)
+    tree <- rpart(ystar~.,as.data.frame(X))
     Phi <- matrix(0,length(Y), length(unique(tree$where)))
-    feuilles <- predict(tree,X)
+    feuilles <- predict(tree,as.data.frame(X))
     leaf <- unique(feuilles)
     for (p in 1:length(leaf)){
       w <- which(feuilles==leaf[p])
@@ -1211,7 +1210,7 @@ REEMtree <- function(X,Y,id,Z,iter=10, time, sto, delta = 0.001){
       w <- intersect(ou,lee)
       tree$frame[w,5] <- beta[k]
     }
-    fhat <- predict(tree, X)
+    fhat <- predict(tree, as.data.frame(X))
     for (k in 1:nind){ ### calcul des effets al?atoires par individu
       indiv <- which(id==unique(id)[k])
       K <- sto_analysis(sto,time[indiv])
@@ -1292,7 +1291,7 @@ logV <- function(Y,f,Z,time,id,B,gamma,sigma, sto){
 
 #' Title
 #'
-#' @param time
+#' @param time [time]
 #' @param H
 #'
 #' @keywords internal
@@ -1308,14 +1307,14 @@ cov.fbm <- function(time,H){
 
 #' Title
 #'
-#' @param X
-#' @param Y
-#' @param id
-#' @param Z
-#' @param iter
-#' @param mtry
-#' @param ntree
-#' @param time
+#' @param X [matrix]
+#' @param Y [vector]
+#' @param id [vector]
+#' @param Z [matrix]
+#' @param iter [numeric]
+#' @param mtry [numeric]
+#' @param ntree [numeric]
+#' @param time [time]
 #'
 #' @import stats
 #'
@@ -1668,14 +1667,14 @@ opti.exp <- function(X,Y,id,Z,iter,mtry,ntree,time){
 
 #' Title
 #'
-#' @param X
-#' @param Y
-#' @param id
-#' @param Z
-#' @param iter
-#' @param mtry
-#' @param ntree
-#' @param time
+#' @param X [matrix]
+#' @param Y [vector]
+#' @param id [vector]
+#' @param Z [matrix]
+#' @param iter [numeric]
+#' @param mtry [numeric]
+#' @param ntree [numeric]
+#' @param time [time]
 #'
 #' @import stats
 #'

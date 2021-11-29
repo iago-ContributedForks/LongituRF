@@ -7,7 +7,21 @@
 opti.FBM(X, Y, id, Z, iter, mtry, ntree, time)
 }
 \arguments{
-\item{time}{}
+\item{X}{[matrix]}
+
+\item{Y}{[vector]}
+
+\item{id}{[vector]}
+
+\item{Z}{[matrix]}
+
+\item{iter}{[numeric]}
+
+\item{mtry}{[numeric]}
+
+\item{ntree}{[numeric]}
+
+\item{time}{[time]}
 }
 \description{
 Title
