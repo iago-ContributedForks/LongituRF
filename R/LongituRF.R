@@ -40,9 +40,9 @@
 #'
 #'
 #' @references 
-#' Ahlem Hajjem, François Bellavance, and Denis Larocque (2014). Mixed-effects random forest for clustered data. Journal of Statistical Computation and Simulation, 84(6), 1313–1328. doi:\href{https://doi.org/10.1080/00949655.2012.741599}{10.1080/00949655.2012.741599}
+#' Ahlem Hajjem, François Bellavance, and Denis Larocque (2014). Mixed-effects random forest for clustered data. Journal of Statistical Computation and Simulation, 84(6), 1313–1328. \doi{10.1080/00949655.2012.741599}
 #'
-#' Louis Capitaine, Robin Genuer, and Rodolphe Thiébaut (2020). Random forests for high-dimensional longitudinal data. Statistical Methods in Medical Research, 096228022094608. doi:\href{https://doi.org/10.1177/0962280220946080}{10.1177/0962280220946080}
+#' Louis Capitaine, Robin Genuer, and Rodolphe Thiébaut (2020). Random forests for high-dimensional longitudinal data. Statistical Methods in Medical Research, 096228022094608. \doi{10.1177/0962280220946080}
 #'
 #' Leo Breiman (2001). Random Forests. Machine Learning, 45(1), 5–32.
 #'
@@ -104,7 +104,7 @@ MERF <- function(X,Y,id,Z,iter=100,mtry=ceiling(ncol(X)/3),ntree=500, time, sto,
         }
 
 	if(!conditional){
-		forest <- randomForest(X,ystar,mtry=mtry,ntree=ntree, importance = TRUE) ### on construit l'arbre
+		forest <- randomForest(as.data.frame(X),ystar,mtry=mtry,ntree=ntree, importance = TRUE) ### on construit l'arbre
 		fhat <- predict(forest) #### pr?diction avec l'arbre
 		OOB[i] <- forest$mse[ntree]
 	} else{
@@ -172,7 +172,7 @@ MERF <- function(X,Y,id,Z,iter=100,mtry=ceiling(ncol(X)/3),ntree=500, time, sto,
         }
 
 	if(!conditional){
-		forest <- randomForest(X,ystar,mtry=mtry,ntree=ntree, importance = TRUE) ### on construit l'arbre
+		forest <- randomForest(as.data.frame(X),ystar,mtry=mtry,ntree=ntree, importance = TRUE) ### on construit l'arbre
 		fhat <- predict(forest) #### pr?diction avec l'arbre
 		OOB[i] <- forest$mse[ntree]
 	} else{
@@ -226,7 +226,7 @@ MERF <- function(X,Y,id,Z,iter=100,mtry=ceiling(ncol(X)/3),ntree=500, time, sto,
         }
 
 	if(!conditional){
-		forest <- randomForest(X,ystar,mtry=mtry,ntree=ntree, importance = TRUE) ### on construit l'arbre
+		forest <- randomForest(as.data.frame(X),ystar,mtry=mtry,ntree=ntree, importance = TRUE) ### on construit l'arbre
 		fhat <- predict(forest) #### pr?diction avec l'arbre
 		OOB[i] <- forest$mse[ntree]
 	} else{
@@ -275,7 +275,7 @@ MERF <- function(X,Y,id,Z,iter=100,mtry=ceiling(ncol(X)/3),ntree=500, time, sto,
     }
 
     if(!conditional){
-	    forest <- randomForest(X,ystar,mtry=mtry,ntree=ntree, importance = TRUE) ### on construit l'arbre
+	    forest <- randomForest(as.data.frame(X),ystar,mtry=mtry,ntree=ntree, importance = TRUE) ### on construit l'arbre
 	    fhat <- predict(forest) #### pr?diction avec l'arbre
 	    OOB[i] <- forest$mse[ntree]
     } else{
@@ -426,7 +426,7 @@ gam_sto <- function(sigma,id,Z, Btilde, time, sigma2,sto, omega){
 predict.longituRF <- function(object, X,Z,id,time,...){
   n <- length(unique(id))
   id_btilde <- object$id_btilde
-  f <- predict(object$forest,X)
+  f <- predict(object$forest,as.data.frame(X))
   Time <- object$time
   id_btilde <- object$id_btilde
   Ypred <- rep(0,length(id))
@@ -784,7 +784,7 @@ REEMforest <- function(X,Y,id,Z,iter=100,mtry,ntree=500, time, sto, delta = 0.00
           indiv <- which(id==unique(id)[k])
           ystar[indiv] <- Y[indiv]- Z[indiv,, drop=FALSE]%*%btilde[k,]- omega[indiv]
         }
-        forest <- randomForest(X, ystar,mtry=mtry,ntree=ntree, importance = TRUE, keep.inbag=TRUE)
+        forest <- randomForest(as.data.frame(X), ystar,mtry=mtry,ntree=ntree, importance = TRUE, keep.inbag=TRUE)
         f1 <- predict(forest,X,nodes=TRUE)
         OOB[i] <- forest$mse[ntree]
         trees <- attributes(f1)
@@ -846,7 +846,7 @@ REEMforest <- function(X,Y,id,Z,iter=100,mtry,ntree=500, time, sto, delta = 0.00
           indiv <- which(id==unique(id)[k])
           ystar[indiv] <- Y[indiv]- Z[indiv,, drop=FALSE]%*%btilde[k,]
         }
-        forest <- randomForest(X, ystar,mtry=mtry,ntree=ntree, importance = TRUE, keep.inbag=TRUE)
+        forest <- randomForest(as.data.frame(X), ystar,mtry=mtry,ntree=ntree, importance = TRUE, keep.inbag=TRUE)
         f1 <- predict(forest,X,nodes=TRUE)
         trees <- attributes(f1)
         OOB[i] <- forest$mse[ntree]
@@ -905,7 +905,7 @@ REEMforest <- function(X,Y,id,Z,iter=100,mtry,ntree=500, time, sto, delta = 0.00
       ystar[indiv] <- Y[indiv]- Z[indiv,, drop=FALSE]%*%btilde[k,]- omega[indiv]
     }
 
-    forest <- randomForest(X, ystar,mtry=mtry,ntree=ntree, importance = TRUE, keep.inbag=TRUE)
+    forest <- randomForest(as.data.frame(X), ystar,mtry=mtry,ntree=ntree, importance = TRUE, keep.inbag=TRUE)
     f1 <- predict(forest,X,nodes=TRUE)
     OOB[i] <- forest$mse[ntree]
     trees <- attributes(f1)
@@ -1044,9 +1044,9 @@ Moy_exp <- function(id,Btilde,sigmahat,Phi,Y,Z, alpha, time, sigma2){
 #'
 #'
 #' @references 
-#' Ahlem Hajjem, François Bellavance, and Denis Larocque (2011). Mixed effects regression trees for clustered data. Statistics & Probability Letters, 81(4), 451–459. doi:\href{https://doi.org/10.1016/j.spl.2010.12.003}{10.1016/j.spl.2010.12.003}
+#' Ahlem Hajjem, François Bellavance, and Denis Larocque (2011). Mixed effects regression trees for clustered data. Statistics & Probability Letters, 81(4), 451–459. \doi{10.1016/j.spl.2010.12.003}
 #'
-#' Louis Capitaine, Robin Genuer, and Rodolphe Thiébaut (2020). Random forests for high-dimensional longitudinal data. Statistical Methods in Medical Research, 096228022094608. doi:\href{https://doi.org/10.1177/0962280220946080}{10.1177/0962280220946080}
+#' Louis Capitaine, Robin Genuer, and Rodolphe Thiébaut (2020). Random forests for high-dimensional longitudinal data. Statistical Methods in Medical Research, 096228022094608. \doi{10.1177/0962280220946080}
 #'
 #' Leo Breiman (2001). Random Forests. Machine Learning, 45(1), 5–32.
 #'
@@ -1089,13 +1089,13 @@ MERT <- function(X,Y,id,Z,iter=100,time, sto, delta = 0.001, conditional = FALSE
           indiv <- which(id==unique(id)[k])
           ystar[indiv] <- Y[indiv]- Z[indiv,, drop=FALSE]%*%btilde[k,]
         }
-
-	if(!conditional){
-		tree <- rpart(ystar~.,as.data.frame(X)) ### on construit l'arbre
-	} else {
-		citdata <- as.data.frame(cbind(ystar, X))
-		tree <- ctree(ystar~., citdata)
-	}
+        
+        if(!conditional){
+          tree <- rpart(ystar~.,as.data.frame(X)) ### on construit l'arbre
+        } else {
+          citdata <- as.data.frame(cbind(ystar, X))
+          tree <- ctree(ystar~., citdata)
+        }
         fhat <- predict(tree, as.data.frame(X)) #### pr?diction avec l'arbre
         for (k in 1:nind){ ### calcul des effets al?atoires par individu
           indiv <- which(id==unique(id)[k])
