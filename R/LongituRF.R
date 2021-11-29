@@ -951,7 +951,7 @@ Moy_exp <- function(id,Btilde,sigmahat,Phi,Y,Z, alpha, time, sigma2){
 #'
 #'
 #'
-#' @return A fitted (S)MERF model which is a list of the following elements: \itemize{
+#' @return A fitted (S)MERT model which is a list of the following elements: \itemize{
 #' \item \code{forest:} Tree obtained at the last iteration.
 #' \item \code{random_effects :} Predictions of random effects for different trajectories.
 #' \item \code{id_btilde:} Identifiers of individuals associated with the predictions \code{random_effects}.
