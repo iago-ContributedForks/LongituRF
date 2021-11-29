@@ -24,7 +24,7 @@ MERT(X, Y, id, Z, iter = 100, time, sto, delta = 0.001)
 \item{delta}{[numeric]: The algorithm stops when the difference in log likelihood between two iterations is smaller than \code{delta}. The default value is set to O.O01}
 }
 \value{
-A fitted (S)MERF model which is a list of the following elements: \itemize{
+A fitted (S)MERT model which is a list of the following elements: \itemize{
 \item \code{forest:} Tree obtained at the last iteration.
 \item \code{random_effects :} Predictions of random effects for different trajectories.
 \item \code{id_btilde:} Identifiers of individuals associated with the predictions \code{random_effects}.
@@ -51,7 +51,7 @@ data <- DataLongGenerator(n=20) # Generate the data composed by n=20 individuals
 # Train a SMERF model on the generated data. Should take ~ 50 secondes
 # The data are generated with a Brownian motion,
 # so we use the parameter sto="BM" to specify a Brownian motion as stochastic process
-smert <- MERF(X=data$X,Y=data$Y,Z=data$Z,id=data$id,time=data$time,sto="BM")
+smert <- MERT(X=data$X,Y=data$Y,Z=data$Z,id=data$id,time=data$time,sto="BM")
 smert$forest # is the fitted random forest (obtained at the last iteration).
 smert$random_effects # are the predicted random effects for each individual.
 smert$omega # are the predicted stochastic processes.

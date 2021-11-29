@@ -7,6 +7,8 @@
 cov.fbm(time, H)
 }
 \arguments{
+\item{time}{[time]}
+
 \item{H}{}
 }
 \description{
