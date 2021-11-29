@@ -974,7 +974,7 @@ Moy_exp <- function(id,Btilde,sigmahat,Phi,Y,Z, alpha, time, sigma2){
 #' # The data are generated with a Brownian motion,
 #' # so we use the parameter sto="BM" to specify a Brownian motion as stochastic process
 #' smert <- MERT(X=data$X,Y=data$Y,Z=data$Z,id=data$id,time=data$time,sto="BM")
-#' smert$forest # is the fitted random forest (obtained at the last iteration).
+#' smert$forest # is the fitted regression tree (obtained at the last iteration).
 #' smert$random_effects # are the predicted random effects for each individual.
 #' smert$omega # are the predicted stochastic processes.
 #' plot(smert$Vraisemblance) #evolution of the log-likelihood.
