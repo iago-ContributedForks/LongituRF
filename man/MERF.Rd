@@ -39,7 +39,7 @@ MERF(
 
 \item{delta}{[numeric]: The algorithm stops when the difference in log likelihood between two iterations is smaller than \code{delta}. The default value is set to O.O01}
 
-\item{conditional}{[logical]: Determines if the random forest algorithm is the one implemented by Breiman (2001) and available in \code{\link[randomForest]{randomForest}}, which is the default \code{FALSE}, or if it is the implemented by Strobl et al. (2009) using conditional inference trees in \code{\link[party]{cforest}}.}
+\item{conditional}{[logical]: Determines if the random forest algorithm is the one implemented by Breiman (2001) and available in \code{\link[randomForest]{randomForest}}, which is the default \code{FALSE}, or if it is the implemented by Strobl et al. (2007) using conditional inference trees in \code{\link[party]{cforest}}.}
 }
 \value{
 A fitted (S)MERF model which is a list of the following elements: \itemize{
@@ -53,7 +53,7 @@ A fitted (S)MERF model which is a list of the following elements: \itemize{
 \item \code{sto: } Stochastic process used in the model.
 \item \code{Vraisemblance:} Log-likelihood of the different iterations.
 \item \code{id: } Vector of the identifiers for the different trajectories.
-\item \code{OOB: } OOB error of the fitted random forest at each iteration.
+\item \code{OOB: } OOB error of the fitted random forest at each iteration, only when \code{conditional=FALSE}.
 }
 }
 \description{
@@ -80,11 +80,11 @@ smerf$OOB # OOB error at each iteration.
 
 }
 \references{
-Ahlem Hajjem, François Bellavance, and Denis Larocque (2014). Mixed-effects random forest for clustered data. Journal of Statistical Computation and Simulation, 84(6), 1313–1328. doi:\href{https://doi.org/10.1080/00949655.2012.741599}{10.1080/00949655.2012.741599}
+Ahlem Hajjem, François Bellavance, and Denis Larocque (2014). Mixed-effects random forest for clustered data. Journal of Statistical Computation and Simulation, 84(6), 1313–1328. \doi{10.1080/00949655.2012.741599}
 
-Louis Capitaine, Robin Genuer, and Rodolphe Thiébaut (2020). Random forests for high-dimensional longitudinal data. Statistical Methods in Medical Research, 096228022094608. doi:\href{https://doi.org/10.1177/0962280220946080}{10.1177/0962280220946080}
+Louis Capitaine, Robin Genuer, and Rodolphe Thiébaut (2020). Random forests for high-dimensional longitudinal data. Statistical Methods in Medical Research, 096228022094608. \doi{10.1177/0962280220946080}
 
 Leo Breiman (2001). Random Forests. Machine Learning, 45(1), 5–32.
 
-Carolin Strobl, Torsten Hothorn and Achim Zeileis (2009) Party on! The R Journal, 1(2), p. 14. doi:\href{https://doi.org/10.32614/RJ-2009-013}{10.32614/RJ-2009-013}.
+Carolin Strobl, Anne-Laure Boulesteix, Achim Zeileis and Torsten Hothorn (2007). Bias in Random Forest Variable Importance Measures: Illustrations, Sources and a Solution. BMC Bioinformatics, 8(25).
 }

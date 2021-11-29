@@ -4,7 +4,7 @@
 \alias{MERT}
 \title{(S)MERT algorithm}
 \usage{
-MERT(X, Y, id, Z, iter = 100, time, sto, delta = 0.001)
+MERT(X, Y, id, Z, iter = 100, time, sto, delta = 0.001, conditional = FALSE)
 }
 \arguments{
 \item{X}{[matrix]: A \code{N}x\code{p} matrix containing the \code{p} predictors of the fixed effects, column codes for a predictor.}
@@ -22,6 +22,8 @@ MERT(X, Y, id, Z, iter = 100, time, sto, delta = 0.001)
 \item{sto}{[character]: Defines the covariance function of the stochastic process, can be either \code{"none"} for no stochastic process, \code{"BM"} for Brownian motion, \code{OrnUhl} for standard Ornstein-Uhlenbeck process, \code{BBridge} for Brownian Bridge, \code{fbm} for Fractional Brownian motion; can also be a function defined by the user.}
 
 \item{delta}{[numeric]: The algorithm stops when the difference in log likelihood between two iterations is smaller than \code{delta}. The default value is set to O.O01}
+
+\item{conditional}{[logical]: Determines if the regression tree uses conditional inference trees in \code{\link[party]{cforest}} as implemented by Hothorn et al. (2006) in \code{\link[party]{ctree}} (\code{TRUE}) or the usual regression trees as implemented in \code{[rpart]{rpart}}, being this case (\code{TRUE}) the default.}
 }
 \value{
 A fitted (S)MERT model which is a list of the following elements: \itemize{
@@ -52,10 +54,19 @@ data <- DataLongGenerator(n=20) # Generate the data composed by n=20 individuals
 # The data are generated with a Brownian motion,
 # so we use the parameter sto="BM" to specify a Brownian motion as stochastic process
 smert <- MERT(X=data$X,Y=data$Y,Z=data$Z,id=data$id,time=data$time,sto="BM")
-smert$forest # is the fitted random forest (obtained at the last iteration).
+smert$forest # is the fitted regression tree (obtained at the last iteration).
 smert$random_effects # are the predicted random effects for each individual.
 smert$omega # are the predicted stochastic processes.
 plot(smert$Vraisemblance) #evolution of the log-likelihood.
 
 
+}
+\references{
+Ahlem Hajjem, François Bellavance, and Denis Larocque (2011). Mixed effects regression trees for clustered data. Statistics & Probability Letters, 81(4), 451–459. \doi{10.1016/j.spl.2010.12.003}
+
+Louis Capitaine, Robin Genuer, and Rodolphe Thiébaut (2020). Random forests for high-dimensional longitudinal data. Statistical Methods in Medical Research, 096228022094608. \doi{10.1177/0962280220946080}
+
+Leo Breiman (2001). Random Forests. Machine Learning, 45(1), 5–32.
+
+Torsten Hothorn, Kurt Hornik and Achim Zeileis (2006). Unbiased Recursive Partitioning: A Conditional Inference Framework. Journal of Computational and Graphical Statistics, 15(3), 651--674.
 }
