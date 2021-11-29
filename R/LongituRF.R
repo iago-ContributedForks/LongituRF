@@ -108,7 +108,7 @@ MERF <- function(X,Y,id,Z,iter=100,mtry=ceiling(ncol(X)/3),ntree=500, time, sto,
 		fhat <- predict(forest) #### pr?diction avec l'arbre
 		OOB[i] <- forest$mse[ntree]
 	} else{
-		citdata <- cbind(ystar, X)
+		citdata <- as.data.frame(cbind(ystar, X))
 		forest <- cforest(ystar ~ ., data = citdata, controls = cforest_unbiased(mtry = mtry, ntree = ntree))
 		fhat <- predict(forest, OOB = TRUE, type = "response") #### pr?diction avec l'arbre
 	}
@@ -176,7 +176,7 @@ MERF <- function(X,Y,id,Z,iter=100,mtry=ceiling(ncol(X)/3),ntree=500, time, sto,
 		fhat <- predict(forest) #### pr?diction avec l'arbre
 		OOB[i] <- forest$mse[ntree]
 	} else{
-		citdata <- cbind(ystar, X)
+		citdata <- as.data.frame(cbind(ystar, X))
 		forest <- cforest(ystar ~ ., data = citdata, controls = cforest_unbiased(mtry = mtry, ntree = ntree))
 		fhat <- predict(forest, OOB = TRUE, type = "response") #### pr?diction avec l'arbre
 	}
@@ -230,7 +230,7 @@ MERF <- function(X,Y,id,Z,iter=100,mtry=ceiling(ncol(X)/3),ntree=500, time, sto,
 		fhat <- predict(forest) #### pr?diction avec l'arbre
 		OOB[i] <- forest$mse[ntree]
 	} else{
-		citdata <- cbind(ystar, X)
+		citdata <- as.data.frame(cbind(ystar, X))
 		forest <- cforest(ystar ~ ., data = citdata, controls = cforest_unbiased(mtry = mtry, ntree = ntree))
 		fhat <- predict(forest, OOB = TRUE, type = "response") #### pr?diction avec l'arbre
 	}
@@ -279,7 +279,7 @@ MERF <- function(X,Y,id,Z,iter=100,mtry=ceiling(ncol(X)/3),ntree=500, time, sto,
 	    fhat <- predict(forest) #### pr?diction avec l'arbre
 	    OOB[i] <- forest$mse[ntree]
     } else{
-	    citdata <- cbind(ystar, X)
+	    citdata <- as.data.frame(cbind(ystar, X))
 	    forest <- cforest(ystar ~ ., data = citdata, controls = cforest_unbiased(mtry = mtry, ntree = ntree))
 	    fhat <- predict(forest, OOB = TRUE, type = "response") #### pr?diction avec l'arbre
     }
@@ -1066,7 +1066,7 @@ Moy_exp <- function(id,Btilde,sigmahat,Phi,Y,Z, alpha, time, sigma2){
 #' plot(smert$Vraisemblance) #evolution of the log-likelihood.
 #'
 #'
-MERT <- function(X,Y,id,Z,iter=100,time, sto, delta = 0.001){
+MERT <- function(X,Y,id,Z,iter=100,time, sto, delta = 0.001, conditional = FALSE){
   q <- dim(Z)[2]
   nind <- length(unique(id))
   btilde <- matrix(0,nind,q) #### Pour la ligne i, on a les effets al?atoires de l'individu i
@@ -1090,7 +1090,12 @@ MERT <- function(X,Y,id,Z,iter=100,time, sto, delta = 0.001){
           ystar[indiv] <- Y[indiv]- Z[indiv,, drop=FALSE]%*%btilde[k,]
         }
 
-        tree <- rpart(ystar~.,as.data.frame(X)) ### on construit l'arbre
+	if(!conditional){
+		tree <- rpart(ystar~.,as.data.frame(X)) ### on construit l'arbre
+	} else {
+		citdata <- as.data.frame(cbind(ystar, X))
+		tree <- ctree(ystar~., citdata)
+	}
         fhat <- predict(tree, as.data.frame(X)) #### pr?diction avec l'arbre
         for (k in 1:nind){ ### calcul des effets al?atoires par individu
           indiv <- which(id==unique(id)[k])
