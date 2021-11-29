@@ -17,7 +17,7 @@
 #' @param time [vector]: Is the vector of the measurement times associated with the trajectories in \code{Y},\code{Z} and \code{X}.
 #' @param sto [character]: Defines the covariance function of the stochastic process, can be either \code{"none"} for no stochastic process, \code{"BM"} for Brownian motion, \code{OrnUhl} for standard Ornstein-Uhlenbeck process, \code{BBridge} for Brownian Bridge, \code{fbm} for Fractional Brownian motion; can also be a function defined by the user.
 #' @param delta [numeric]: The algorithm stops when the difference in log likelihood between two iterations is smaller than \code{delta}. The default value is set to O.O01
-#' @param conditional [logical]: Determines if the random forest algorithm is the one implemented by Breiman (2001) and available in \code{\link[randomForest]{randomForest}}, which is the default \code{FALSE}, or if it is the implemented by Strobl et al. (2009) using conditional inference trees in \code{\link[party]{cforest}}.
+#' @param conditional [logical]: Determines if the random forest algorithm is the one implemented by Breiman (2001) and available in \code{\link[randomForest]{randomForest}}, which is the default \code{FALSE}, or if it is the implemented by Strobl et al. (2007) using conditional inference trees in \code{\link[party]{cforest}}.
 #'
 #' @import randomForest
 #' @import party
@@ -33,7 +33,7 @@
 #' \item \code{sto: } Stochastic process used in the model.
 #' \item \code{Vraisemblance:} Log-likelihood of the different iterations.
 #' \item \code{id: } Vector of the identifiers for the different trajectories.
-#' \item \code{OOB: } OOB error of the fitted random forest at each iteration.
+#' \item \code{OOB: } OOB error of the fitted random forest at each iteration, only when \code{conditional=FALSE}.
 #' }
 #'
 #' @export
@@ -46,7 +46,8 @@
 #'
 #' Leo Breiman (2001). Random Forests. Machine Learning, 45(1), 5–32.
 #'
-#' Carolin Strobl, Torsten Hothorn and Achim Zeileis (2009) Party on! The R Journal, 1(2), p. 14. doi:\href{https://doi.org/10.32614/RJ-2009-013}{10.32614/RJ-2009-013}.
+#' Carolin Strobl, Anne-Laure Boulesteix, Achim Zeileis and Torsten Hothorn (2007). Bias in Random Forest Variable Importance Measures: Illustrations, Sources and a Solution. BMC Bioinformatics, 8(25).
+#'
 #'
 #' @examples
 #' set.seed(123)
@@ -139,7 +140,11 @@ MERF <- function(X,Y,id,Z,iter=100,mtry=ceiling(ncol(X)/3),ntree=500, time, sto,
           return(sortie)
         }
       }
-      sortie <- list(forest=forest,random_effects=btilde,var_random_effects=Btilde,sigma=sigmahat, id_btilde=unique(id),sigma_sto=sigma2,omega=omega2, sigma_sto =sigma2, time = time, sto= sto, Hurst =h, id=id, Vraisemblance=Vrai, OOB =OOB)
+      if(!conditional){
+	      sortie <- list(forest=forest,random_effects=btilde,var_random_effects=Btilde,sigma=sigmahat, id_btilde=unique(id),sigma_sto=sigma2,omega=omega2, sigma_sto =sigma2, time = time, sto= sto, Hurst =h, id=id, Vraisemblance=Vrai, OOB =OOB)
+      } else {
+	      sortie <- list(forest=forest,random_effects=btilde,var_random_effects=Btilde,sigma=sigmahat, id_btilde=unique(id),sigma_sto=sigma2,omega=omega2, sigma_sto =sigma2, time = time, sto= sto, Hurst =h, id=id, Vraisemblance=Vrai)
+      }
       class(sortie) <- "longituRF"
       return(sortie)
     }
@@ -166,9 +171,15 @@ MERF <- function(X,Y,id,Z,iter=100,mtry=ceiling(ncol(X)/3),ntree=500, time, sto,
           ystar[indiv] <- Y[indiv]- Z[indiv,, drop=FALSE]%*%btilde[k,]- omega[indiv]
         }
 
-        forest <- randomForest(X,ystar,mtry=mtry,ntree=ntree, importance = TRUE) ### on construit l'arbre
-        fhat <- predict(forest) #### pr?diction avec l'arbre
-        OOB[i] <- forest$mse[ntree]
+	if(!conditional){
+		forest <- randomForest(X,ystar,mtry=mtry,ntree=ntree, importance = TRUE) ### on construit l'arbre
+		fhat <- predict(forest) #### pr?diction avec l'arbre
+		OOB[i] <- forest$mse[ntree]
+	} else{
+		citdata <- cbind(ystar, X)
+		forest <- cforest(ystar ~ ., data = citdata, controls = cforest_unbiased(mtry = mtry, ntree = ntree))
+		fhat <- predict(forest, OOB = TRUE, type = "response") #### pr?diction avec l'arbre
+	}
         for (k in 1:nind){ ### calcul des effets al?atoires par individu
           indiv <- which(id==unique(id)[k])
           K <- cov.exp(time[indiv], alpha)
@@ -188,12 +199,20 @@ MERF <- function(X,Y,id,Z,iter=100,mtry=ceiling(ncol(X)/3),ntree=500, time, sto,
         if (i>1) inc <- (Vrai[i-1]-Vrai[i])/Vrai[i-1]
         if (inc < delta) {
           print(paste0("stopped after ", i, " iterations."))
-          sortie <- list(forest=forest,random_effects=btilde,var_random_effects=Btilde,sigma=sigmahat, id_btilde=unique(id), sto= sto, vraisemblance = Vrai,id=id, time=time, alpha = alpha, OOB =OOB, omega=omega2)
+          if(!conditional){
+		  sortie <- list(forest=forest,random_effects=btilde,var_random_effects=Btilde,sigma=sigmahat, id_btilde=unique(id), sto= sto, vraisemblance = Vrai,id=id, time=time, alpha = alpha, OOB =OOB, omega=omega2)
+	  } else {
+		  sortie <- list(forest=forest,random_effects=btilde,var_random_effects=Btilde,sigma=sigmahat, id_btilde=unique(id), sto= sto, vraisemblance = Vrai,id=id, time=time, alpha = alpha, omega=omega2)
+	  }
           class(sortie) <- "longituRF"
           return(sortie)
         }
       }
-      sortie <- list(forest=forest,random_effects=btilde,var_random_effects=Btilde,sigma=sigmahat, id_btilde=unique(id), omega=omega2, sigma_sto =sigma2, time = time, sto= sto, alpha=alpha, id=id, Vraisemblance=Vrai, OOB =OOB)
+      if(!conditional){
+	      sortie <- list(forest=forest,random_effects=btilde,var_random_effects=Btilde,sigma=sigmahat, id_btilde=unique(id), omega=omega2, sigma_sto =sigma2, time = time, sto= sto, alpha=alpha, id=id, Vraisemblance=Vrai, OOB =OOB)
+      } else{
+	      sortie <- list(forest=forest,random_effects=btilde,var_random_effects=Btilde,sigma=sigmahat, id_btilde=unique(id), omega=omega2, sigma_sto =sigma2, time = time, sto= sto, alpha=alpha, id=id, Vraisemblance=Vrai)
+      }
       class(sortie) <- "longituRF"
       return(sortie)
     }
@@ -206,9 +225,15 @@ MERF <- function(X,Y,id,Z,iter=100,mtry=ceiling(ncol(X)/3),ntree=500, time, sto,
           ystar[indiv] <- Y[indiv]- Z[indiv,,drop=FALSE]%*%btilde[k,]
         }
 
-        forest <- randomForest(X,ystar,mtry=mtry,ntree=ntree, importance = TRUE) ### on construit l'arbre
-        fhat <- predict(forest)
-        OOB[i] <- forest$mse[ntree]
+	if(!conditional){
+		forest <- randomForest(X,ystar,mtry=mtry,ntree=ntree, importance = TRUE) ### on construit l'arbre
+		fhat <- predict(forest) #### pr?diction avec l'arbre
+		OOB[i] <- forest$mse[ntree]
+	} else{
+		citdata <- cbind(ystar, X)
+		forest <- cforest(ystar ~ ., data = citdata, controls = cforest_unbiased(mtry = mtry, ntree = ntree))
+		fhat <- predict(forest, OOB = TRUE, type = "response") #### pr?diction avec l'arbre
+	}
         for (k in 1:nind){
           indiv <- which(id==unique(id)[k])
           V <- Z[indiv,, drop=FALSE]%*%Btilde%*%t(Z[indiv,, drop=FALSE])+diag(as.numeric(sigmahat),length(indiv),length(indiv))
@@ -224,12 +249,20 @@ MERF <- function(X,Y,id,Z,iter=100,mtry=ceiling(ncol(X)/3),ntree=500, time, sto,
 
         if (inc < delta) {
           print(paste0("stopped after ", i, " iterations."))
-          sortie <- list(forest=forest,random_effects=btilde,var_random_effects=Btilde,sigma=sigmahat, id_btilde=unique(id), sto= sto, vraisemblance = Vrai,id=id, time=time, OOB =OOB)
+          if(!conditional){
+		  sortie <- list(forest=forest,random_effects=btilde,var_random_effects=Btilde,sigma=sigmahat, id_btilde=unique(id), sto= sto, vraisemblance = Vrai,id=id, time=time, OOB =OOB)
+	  } else {
+		  sortie <- list(forest=forest,random_effects=btilde,var_random_effects=Btilde,sigma=sigmahat, id_btilde=unique(id), sto= sto, vraisemblance = Vrai,id=id, time=time)
+	  }
           class(sortie) <- "longituRF"
           return(sortie)
         }
       }
-      sortie <- list(forest=forest,random_effects=btilde,var_random_effects=Btilde,sigma=sigmahat, id_btilde=unique(id), sto= sto, vraisemblance=Vrai,id=id, time=time, OOB =OOB)
+      if(!conditional){
+	      sortie <- list(forest=forest,random_effects=btilde,var_random_effects=Btilde,sigma=sigmahat, id_btilde=unique(id), sto= sto, vraisemblance=Vrai,id=id, time=time, OOB =OOB)
+      } else{
+	      sortie <- list(forest=forest,random_effects=btilde,var_random_effects=Btilde,sigma=sigmahat, id_btilde=unique(id), sto= sto, vraisemblance=Vrai,id=id, time=time)
+      }
       class(sortie) <- "longituRF"
       return(sortie)
     }
@@ -241,9 +274,15 @@ MERF <- function(X,Y,id,Z,iter=100,mtry=ceiling(ncol(X)/3),ntree=500, time, sto,
       ystar[indiv] <- Y[indiv]- Z[indiv,, drop=FALSE]%*%btilde[k,]- omega[indiv]
     }
 
-    forest <- randomForest(X,ystar,mtry=mtry,ntree=ntree, importance=TRUE)
-    fhat <- predict(forest)
-    OOB[i] <- forest$mse[ntree]
+    if(!conditional){
+	    forest <- randomForest(X,ystar,mtry=mtry,ntree=ntree, importance = TRUE) ### on construit l'arbre
+	    fhat <- predict(forest) #### pr?diction avec l'arbre
+	    OOB[i] <- forest$mse[ntree]
+    } else{
+	    citdata <- cbind(ystar, X)
+	    forest <- cforest(ystar ~ ., data = citdata, controls = cforest_unbiased(mtry = mtry, ntree = ntree))
+	    fhat <- predict(forest, OOB = TRUE, type = "response") #### pr?diction avec l'arbre
+    }
     for (k in 1:nind){
       indiv <- which(id==unique(id)[k])
       K <- sto_analysis(sto,time[indiv])
@@ -261,12 +300,20 @@ MERF <- function(X,Y,id,Z,iter=100,mtry=ceiling(ncol(X)/3),ntree=500, time, sto,
     if (i>1) inc <- abs((Vrai[i-1]-Vrai[i])/Vrai[i-1])
     if (inc < delta) {
       print(paste0("stopped after ", i, " iterations."))
-      sortie <- list(forest=forest,random_effects=btilde,var_random_effects=Btilde,sigma=sigmahat, id_btilde=unique(id), omega=omega, sigma_sto =sigma2, time = time, sto= sto,Vraisemblance=Vrai,id=id, OOB =OOB)
+      if(!conditional){
+	      sortie <- list(forest=forest,random_effects=btilde,var_random_effects=Btilde,sigma=sigmahat, id_btilde=unique(id), omega=omega, sigma_sto =sigma2, time = time, sto= sto,Vraisemblance=Vrai,id=id, OOB =OOB)
+      } else{
+	      sortie <- list(forest=forest,random_effects=btilde,var_random_effects=Btilde,sigma=sigmahat, id_btilde=unique(id), omega=omega, sigma_sto =sigma2, time = time, sto= sto,Vraisemblance=Vrai,id=id)
+      }
       class(sortie) <- "longituRF"
       return(sortie)
     }
   }
-  sortie <- list(forest=forest,random_effects=btilde,var_random_effects=Btilde,sigma=sigmahat, id_btilde=unique(id),omega=omega, sigma_sto =sigma2, time = time, sto= sto,Vraisemblance=Vrai,id=id, OOB =OOB)
+  if(!conditional){
+	  sortie <- list(forest=forest,random_effects=btilde,var_random_effects=Btilde,sigma=sigmahat, id_btilde=unique(id),omega=omega, sigma_sto =sigma2, time = time, sto= sto,Vraisemblance=Vrai,id=id, OOB =OOB)
+  } else {
+	  sortie <- list(forest=forest,random_effects=btilde,var_random_effects=Btilde,sigma=sigmahat, id_btilde=unique(id),omega=omega, sigma_sto =sigma2, time = time, sto= sto,Vraisemblance=Vrai,id=id)
+  }
   class(sortie) <- "longituRF"
   return(sortie)
 }
@@ -969,11 +1016,14 @@ Moy_exp <- function(id,Btilde,sigmahat,Phi,Y,Z, alpha, time, sigma2){
 #' @param iter [numeric]: Maximal number of iterations of the algorithm. The default is set to \code{iter=100}
 #' @param time [vector]: Is the vector of the measurement times associated with the trajectories in \code{Y},\code{Z} and \code{X}.
 #' @param sto [character]: Defines the covariance function of the stochastic process, can be either \code{"none"} for no stochastic process, \code{"BM"} for Brownian motion, \code{OrnUhl} for standard Ornstein-Uhlenbeck process, \code{BBridge} for Brownian Bridge, \code{fbm} for Fractional Brownian motion; can also be a function defined by the user.
-#' @param delta [numeric]: The algorithm stops when the difference in log likelihood between two iterations is smaller than \code{delta}. The default value is set to O.O01
+#' @param delta [numeric]: The algorithm stops when the difference in log likelihood between two iterations is smaller than \code{delta}. The default value is set to O.O01 
+#' @param conditional [logical]: Determines if the regression tree uses conditional inference trees in \code{\link[party]{cforest}} as implemented by Hothorn et al. (2006) in \code{\link[party]{ctree}} (\code{TRUE}) or the usual regression trees as implemented in \code{[rpart]{rpart}}, being this case (\code{TRUE}) the default.
+#'
 #'
 #'
 #' @import stats
 #' @import rpart
+#' @import party
 #'
 #'
 #'
