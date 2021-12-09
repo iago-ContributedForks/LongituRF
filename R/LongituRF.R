@@ -1256,7 +1256,7 @@ REEMtree <- function(X,Y,id,Z,iter=10, time, sto, delta = 0.001){
         Phi <- matrix(0,length(Y), length(unique(tree$where)))
         feuilles <- predict(tree,as.data.frame(X))
         leaf <- unique(feuilles)
-        for (p in 1:length(leaf)){
+        for (p in 1:length(leaf)){ # warning!: it can be length(leaf) != length(unique(tree$where)): fit <- rpart(Kyphosis ~ Age + Number + Start, data = kyphosis)
           w <- which(feuilles==leaf[p])
           Phi[unique(w),p] <- 1
         }
