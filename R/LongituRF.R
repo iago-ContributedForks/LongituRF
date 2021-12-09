@@ -39,7 +39,7 @@
 #' @export
 #'
 #'
-#' @references 
+#' @references
 #' Ahlem Hajjem, François Bellavance, and Denis Larocque (2014). Mixed-effects random forest for clustered data. Journal of Statistical Computation and Simulation, 84(6), 1313–1328. \doi{10.1080/00949655.2012.741599}
 #'
 #' Louis Capitaine, Robin Genuer, and Rodolphe Thiébaut (2020). Random forests for high-dimensional longitudinal data. Statistical Methods in Medical Research, 096228022094608. \doi{10.1177/0962280220946080}
@@ -61,6 +61,11 @@
 #' smerf$omega # are the predicted stochastic processes.
 #' plot(smerf$Vraisemblance) # evolution of the log-likelihood.
 #' smerf$OOB # OOB error at each iteration.
+#' csmerf <- MERF(X=data$X,Y=data$Y,Z=data$Z,id=data$id,time=data$time,mtry=2,ntree=500,sto="BM", conditional = TRUE)
+#' csmerf$forest # is the fitted random forest (obtained at the last iteration).
+#' csmerf$random_effects # are the predicted random effects for each individual.
+#' csmerf$omega # are the predicted stochastic processes.
+#' plot(csmerf$Vraisemblance) # evolution of the log-likelihood.
 #'
 #'
 MERF <- function(X,Y,id,Z,iter=100,mtry=ceiling(ncol(X)/3),ntree=500, time, sto, delta = 0.001, conditional = FALSE){
@@ -389,6 +394,7 @@ gam_sto <- function(sigma,id,Z, Btilde, time, sigma2,sto, omega){
 #'
 #' @import stats
 #' @import randomForest
+#' @import party
 #'
 #' @return vector of the predicted output for the new observations.
 #'
@@ -1016,7 +1022,7 @@ Moy_exp <- function(id,Btilde,sigmahat,Phi,Y,Z, alpha, time, sigma2){
 #' @param iter [numeric]: Maximal number of iterations of the algorithm. The default is set to \code{iter=100}
 #' @param time [vector]: Is the vector of the measurement times associated with the trajectories in \code{Y},\code{Z} and \code{X}.
 #' @param sto [character]: Defines the covariance function of the stochastic process, can be either \code{"none"} for no stochastic process, \code{"BM"} for Brownian motion, \code{OrnUhl} for standard Ornstein-Uhlenbeck process, \code{BBridge} for Brownian Bridge, \code{fbm} for Fractional Brownian motion; can also be a function defined by the user.
-#' @param delta [numeric]: The algorithm stops when the difference in log likelihood between two iterations is smaller than \code{delta}. The default value is set to O.O01 
+#' @param delta [numeric]: The algorithm stops when the difference in log likelihood between two iterations is smaller than \code{delta}. The default value is set to O.O01
 #' @param conditional [logical]: Determines if the regression tree uses conditional inference trees in \code{\link[party]{cforest}} as implemented by Hothorn et al. (2006) in \code{\link[party]{ctree}} (\code{TRUE}) or the usual regression trees as implemented in \code{[rpart]{rpart}}, being this case (\code{TRUE}) the default.
 #'
 #'
@@ -1043,7 +1049,7 @@ Moy_exp <- function(id,Btilde,sigmahat,Phi,Y,Z, alpha, time, sigma2){
 #' @export
 #'
 #'
-#' @references 
+#' @references
 #' Ahlem Hajjem, François Bellavance, and Denis Larocque (2011). Mixed effects regression trees for clustered data. Statistics & Probability Letters, 81(4), 451–459. \doi{10.1016/j.spl.2010.12.003}
 #'
 #' Louis Capitaine, Robin Genuer, and Rodolphe Thiébaut (2020). Random forests for high-dimensional longitudinal data. Statistical Methods in Medical Research, 096228022094608. \doi{10.1177/0962280220946080}
@@ -1064,6 +1070,11 @@ Moy_exp <- function(id,Btilde,sigmahat,Phi,Y,Z, alpha, time, sigma2){
 #' smert$random_effects # are the predicted random effects for each individual.
 #' smert$omega # are the predicted stochastic processes.
 #' plot(smert$Vraisemblance) #evolution of the log-likelihood.
+#' csmert <- MERT(X=data$X,Y=data$Y,Z=data$Z,id=data$id,time=data$time,sto="BM", conditional = TRUE)
+#' csmert$forest # is the fitted regression tree (obtained at the last iteration).
+#' csmert$random_effects # are the predicted random effects for each individual.
+#' csmert$omega # are the predicted stochastic processes.
+#' plot(csmert$Vraisemblance) #evolution of the log-likelihood.
 #'
 #'
 MERT <- function(X,Y,id,Z,iter=100,time, sto, delta = 0.001, conditional = FALSE){
@@ -1089,7 +1100,7 @@ MERT <- function(X,Y,id,Z,iter=100,time, sto, delta = 0.001, conditional = FALSE
           indiv <- which(id==unique(id)[k])
           ystar[indiv] <- Y[indiv]- Z[indiv,, drop=FALSE]%*%btilde[k,]
         }
-        
+
         if(!conditional){
           tree <- rpart(ystar~.,as.data.frame(X)) ### on construit l'arbre
         } else {
@@ -1127,7 +1138,12 @@ MERT <- function(X,Y,id,Z,iter=100,time, sto, delta = 0.001, conditional = FALSE
       ystar[indiv] <- Y[indiv]- Z[indiv,, drop=FALSE]%*%btilde[k,]- omega[indiv]
     }
 
-    tree <- rpart(ystar~.,as.data.frame(X)) ### on construit l'arbre
+    if(!conditional){
+      tree <- rpart(ystar~.,as.data.frame(X)) ### on construit l'arbre
+    } else {
+      citdata <- as.data.frame(cbind(ystar, X))
+      tree <- ctree(ystar~., citdata)
+    }
     fhat <- predict(tree, as.data.frame(X)) #### pr?diction avec l'arbre
     for (k in 1:nind){ ### calcul des effets al?atoires par individu
       indiv <- which(id==unique(id)[k])
