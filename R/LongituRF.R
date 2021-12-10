@@ -61,7 +61,7 @@
 #' smerf$omega # are the predicted stochastic processes.
 #' plot(smerf$Vraisemblance) # evolution of the log-likelihood.
 #' smerf$OOB # OOB error at each iteration.
-#' csmerf <- MERF(X=data$X,Y=data$Y,Z=data$Z,id=data$id,time=data$time,mtry=2,ntree=500,sto="BM", conditional = TRUE)
+#' csmerf <- MERF(data$X,data$Y,Z=data$Z,id=data$id,time=data$time,mtry=2,sto="BM",conditional=TRUE)
 #' csmerf$forest # is the fitted random forest (obtained at the last iteration).
 #' csmerf$random_effects # are the predicted random effects for each individual.
 #' csmerf$omega # are the predicted stochastic processes.
@@ -113,7 +113,7 @@ MERF <- function(X,Y,id,Z,iter=100,mtry=ceiling(ncol(X)/3),ntree=500, time, sto,
 		fhat <- predict(forest) #### pr?diction avec l'arbre
 		OOB[i] <- forest$mse[ntree]
 	} else{
-		citdata <- as.data.frame(cbind(ystar, X))
+		citdata <- cbind(ystar, as.data.frame(X))
 		forest <- cforest(ystar ~ ., data = citdata, controls = cforest_unbiased(mtry = mtry, ntree = ntree))
 		fhat <- predict(forest, OOB = TRUE, type = "response") #### pr?diction avec l'arbre
 	}
@@ -181,7 +181,7 @@ MERF <- function(X,Y,id,Z,iter=100,mtry=ceiling(ncol(X)/3),ntree=500, time, sto,
 		fhat <- predict(forest) #### pr?diction avec l'arbre
 		OOB[i] <- forest$mse[ntree]
 	} else{
-		citdata <- as.data.frame(cbind(ystar, X))
+		citdata <- cbind(ystar, as.data.frame(X))
 		forest <- cforest(ystar ~ ., data = citdata, controls = cforest_unbiased(mtry = mtry, ntree = ntree))
 		fhat <- predict(forest, OOB = TRUE, type = "response") #### pr?diction avec l'arbre
 	}
@@ -235,7 +235,7 @@ MERF <- function(X,Y,id,Z,iter=100,mtry=ceiling(ncol(X)/3),ntree=500, time, sto,
 		fhat <- predict(forest) #### pr?diction avec l'arbre
 		OOB[i] <- forest$mse[ntree]
 	} else{
-		citdata <- as.data.frame(cbind(ystar, X))
+		citdata <- cbind(ystar, as.data.frame(X))
 		forest <- cforest(ystar ~ ., data = citdata, controls = cforest_unbiased(mtry = mtry, ntree = ntree))
 		fhat <- predict(forest, OOB = TRUE, type = "response") #### pr?diction avec l'arbre
 	}
@@ -284,7 +284,7 @@ MERF <- function(X,Y,id,Z,iter=100,mtry=ceiling(ncol(X)/3),ntree=500, time, sto,
 	    fhat <- predict(forest) #### pr?diction avec l'arbre
 	    OOB[i] <- forest$mse[ntree]
     } else{
-	    citdata <- as.data.frame(cbind(ystar, X))
+	    citdata <- cbind(ystar, as.data.frame(X))
 	    forest <- cforest(ystar ~ ., data = citdata, controls = cforest_unbiased(mtry = mtry, ntree = ntree))
 	    fhat <- predict(forest, OOB = TRUE, type = "response") #### pr?diction avec l'arbre
     }
@@ -1070,7 +1070,7 @@ Moy_exp <- function(id,Btilde,sigmahat,Phi,Y,Z, alpha, time, sigma2){
 #' smert$random_effects # are the predicted random effects for each individual.
 #' smert$omega # are the predicted stochastic processes.
 #' plot(smert$Vraisemblance) #evolution of the log-likelihood.
-#' csmert <- MERT(X=data$X,Y=data$Y,Z=data$Z,id=data$id,time=data$time,sto="BM", conditional = TRUE)
+#' csmert <- MERT(X=data$X,Y=data$Y,Z=data$Z,id=data$id,time=data$time,sto="BM",conditional=TRUE)
 #' csmert$forest # is the fitted regression tree (obtained at the last iteration).
 #' csmert$random_effects # are the predicted random effects for each individual.
 #' csmert$omega # are the predicted stochastic processes.
@@ -1104,7 +1104,7 @@ MERT <- function(X,Y,id,Z,iter=100,time, sto, delta = 0.001, conditional = FALSE
         if(!conditional){
           tree <- rpart(ystar~.,as.data.frame(X)) ### on construit l'arbre
         } else {
-          citdata <- as.data.frame(cbind(ystar, X))
+          citdata <- cbind(ystar, as.data.frame(X))
           tree <- ctree(ystar~., citdata)
         }
         fhat <- predict(tree, as.data.frame(X)) #### pr?diction avec l'arbre
@@ -1141,7 +1141,7 @@ MERT <- function(X,Y,id,Z,iter=100,time, sto, delta = 0.001, conditional = FALSE
     if(!conditional){
       tree <- rpart(ystar~.,as.data.frame(X)) ### on construit l'arbre
     } else {
-      citdata <- as.data.frame(cbind(ystar, X))
+      citdata <- cbind(ystar, as.data.frame(X))
       tree <- ctree(ystar~., citdata)
     }
     fhat <- predict(tree, as.data.frame(X)) #### pr?diction avec l'arbre

@@ -58,6 +58,11 @@ smert$forest # is the fitted regression tree (obtained at the last iteration).
 smert$random_effects # are the predicted random effects for each individual.
 smert$omega # are the predicted stochastic processes.
 plot(smert$Vraisemblance) #evolution of the log-likelihood.
+csmert <- MERT(X=data$X,Y=data$Y,Z=data$Z,id=data$id,time=data$time,sto="BM",conditional=TRUE)
+csmert$forest # is the fitted regression tree (obtained at the last iteration).
+csmert$random_effects # are the predicted random effects for each individual.
+csmert$omega # are the predicted stochastic processes.
+plot(csmert$Vraisemblance) #evolution of the log-likelihood.
 
 
 }
