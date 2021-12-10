@@ -76,6 +76,11 @@ smerf$random_effects # are the predicted random effects for each individual.
 smerf$omega # are the predicted stochastic processes.
 plot(smerf$Vraisemblance) # evolution of the log-likelihood.
 smerf$OOB # OOB error at each iteration.
+csmerf <- MERF(data$X,data$Y,Z=data$Z,id=data$id,time=data$time,mtry=2,sto="BM",conditional=TRUE)
+csmerf$forest # is the fitted random forest (obtained at the last iteration).
+csmerf$random_effects # are the predicted random effects for each individual.
+csmerf$omega # are the predicted stochastic processes.
+plot(csmerf$Vraisemblance) # evolution of the log-likelihood.
 
 
 }
