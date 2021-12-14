@@ -2065,12 +2065,13 @@ DataLongGenerator <- function(n=50,p=6,G=6){
 #' @param nvars [numeric]: The number of variables to consider among the most impotant variables. Can be a vector, in this case, the function returns the stability scores corresponding to all the values of the vector.
 #' @param cforest [logical]: Determines if the random forest algorithm is the one implemented by Breiman (2001) and available in \code{\link[randomForest]{randomForest}}, which is the default \code{FALSE}, or if it is the implemented by Strobl et al. (2007) using conditional inference trees in \code{\link[party]{cforest}}.
 #' @param conditionalVI [logical]: A logical determining whether unconditional or conditional computation of the importance is performed. Only applicable when \code{cforest==TRUE}.
+#' @param only_score [logical]: Asks if returning just the matrix with the stability scores (default) or should also return the 2 models computed.
 #'
 #' @export
 #'
 #' @return A matrix with all the stability scores corresponding to the eta and nvars values. The $i$th row corresponds to the $i$th value of eta while the $i$th column corresponds to the $i$ value of nvars.
 #
-Stability_Score <- function(X,Y,Z,id,time,mtry,ntree, sto="BM",method="MERF", eta = c(1:ncol(X)),nvars=c(1:ncol(X)), cforest = FALSE, conditionalVI = FALSE){
+Stability_Score <- function(X,Y,Z,id,time,mtry,ntree, sto="BM",method="MERF", eta = c(1:ncol(X)),nvars=c(1:ncol(X)), cforest = FALSE, conditionalVI = FALSE, only_score = TRUE){
 
   if (method=="REEMforest"){
     sortie1 <- REEMforest(X=X,Y=Y,Z=Z,id=id,time=time,mtry=mtry,ntree=ntree,sto=sto)
@@ -2105,7 +2106,11 @@ Stability_Score <- function(X,Y,Z,id,time,mtry,ntree, sto="BM",method="MERF", et
   SS <- as.data.frame(ss)
   colnames(SS) = nvars
   rownames(SS) = eta
-  return(SS)
+  if(only_score){
+    return(SS)
+  } else{
+    return(list(score = SS, models = list(sortie1, sortie2)))
+  }
 }
 
 
