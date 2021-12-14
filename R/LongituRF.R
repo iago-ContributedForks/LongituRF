@@ -1252,21 +1252,30 @@ REEMtree <- function(X,Y,id,Z,iter=10, time, sto, delta = 0.001){
         }
 
         tree <- rpart(ystar~.,as.data.frame(X))
-        Phi <- matrix(0,length(Y), length(unique(tree$where)))
-        feuilles <- predict(tree,as.data.frame(X))
-        leaf <- unique(feuilles)
-        for (p in 1:length(leaf)){ # warning!: it can be length(leaf) != length(unique(tree$where)): fit <- rpart(Kyphosis ~ Age + Number + Start, data = kyphosis)
+        # next both are essentially the same for regression trees; not for classification trees
+        # nnodes <- length(unique(tree$where)) # terminal nodes
+        nnodes <- length(unique(tree$frame$yval[tree$where])) # predicted values at terminal nodes
+
+        Phi <- matrix(0,length(Y), nnodes)
+        feuilles <- as.matrix(predict(tree,as.data.frame(X), type = "matrix"))[,1]
+        leaf <- unique(feuilles) # this is == unique(tree$frame$yval[tree$where])
+        for (p in 1:nnodes){  # warning!: it can be length(leaf) != length(unique(tree$where)): fit <- rpart(Kyphosis ~ Age + Number + Start, data = kyphosis)
+          # w <- which(feuilles==tree$frame$yval[unique(tree$where)[p]])
           w <- which(feuilles==leaf[p])
           Phi[unique(w),p] <- 1
         }
 
         beta <- Moy(id,Btilde,sigmahat,Phi,Y,Z) ### fit des feuilles
+        # this corresponds in some way with fixef(lmefit) + fixef(lmefit)["(Intercept)"] (REEMtree::REEMtree)
 
-        for (k in 1:length(unique(tree$where))){
-          ou <- which(tree$frame[,5]==leaf[k])
-          lee <- which(tree$frame[,1]=="<leaf>")
+        # next is the corresponding step to REEMtree::REEMtree
+        # adjtarg <- unique(cbind(tree$where, predict(lmefit, level = 0)))
+        # tree$frame[adjtarg[, 1], ]$yval <- adjtarg[, 2]
+        for (k in 1:nnodes){
+          ou <- which(tree$frame[,"yval"]==leaf[k])
+          lee <- which(tree$frame[,"var"]=="<leaf>")
           w <- intersect(ou,lee)
-          tree$frame[w,5] <- beta[k]
+          tree$frame[w,"yval"] <- beta[k]
         }
         fhat <- predict(tree, as.data.frame(X))
         for (k in 1:nind){ ### calcul des effets al?atoires par individu
