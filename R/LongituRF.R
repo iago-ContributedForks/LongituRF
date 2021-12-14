@@ -2067,12 +2067,14 @@ DataLongGenerator <- function(n=50,p=6,G=6){
 #' @param method [string]: Defines the method to be used, can be either "MERF" or "REEMforest".
 #' @param eta [numeric]: The size of the neighborhood for the stability score. Can be a vector, in this case, returns the stability scores corresponding to all the values of the vector.
 #' @param nvars [numeric]: The number of variables to consider among the most impotant variables. Can be a vector, in this case, the function returns the stability scores corresponding to all the values of the vector.
+#' @param cforest [logical]: Determines if the random forest algorithm is the one implemented by Breiman (2001) and available in \code{\link[randomForest]{randomForest}}, which is the default \code{FALSE}, or if it is the implemented by Strobl et al. (2007) using conditional inference trees in \code{\link[party]{cforest}}.
+#' @param conditionalVI [logical]: A logical determining whether unconditional or conditional computation of the importance is performed. Only applicable when \code{cforest==TRUE}.
 #'
 #' @export
 #'
 #' @return A matrix with all the stability scores corresponding to the eta and nvars values. The $i$th row corresponds to the $i$th value of eta while the $i$th column corresponds to the $i$ value of nvars.
 #
-Stability_Score <- function(X,Y,Z,id,time,mtry,ntree, sto="BM",method="MERF", eta = c(1:ncol(X)),nvars=c(1:ncol(X))){
+Stability_Score <- function(X,Y,Z,id,time,mtry,ntree, sto="BM",method="MERF", eta = c(1:ncol(X)),nvars=c(1:ncol(X)), cforest = FALSE, conditionalVI = FALSE){
 
   if (method=="REEMforest"){
     sortie1 <- REEMforest(X=X,Y=Y,Z=Z,id=id,time=time,mtry=mtry,ntree=ntree,sto=sto)
@@ -2080,12 +2082,17 @@ Stability_Score <- function(X,Y,Z,id,time,mtry,ntree, sto="BM",method="MERF", et
   }
 
   else {
-    sortie1 <- MERF(X=X,Y=Y,Z=Z,id=id,time=time,mtry=mtry,ntree=ntree,sto=sto)
-    sortie2 <- MERF(X=X,Y=Y,Z=Z,id=id,time=time,mtry=mtry,ntree=ntree,sto=sto)
+    sortie1 <- MERF(X=X,Y=Y,Z=Z,id=id,time=time,mtry=mtry,ntree=ntree,sto=sto,conditional=cforest)
+    sortie2 <- MERF(X=X,Y=Y,Z=Z,id=id,time=time,mtry=mtry,ntree=ntree,sto=sto,conditional=cforest)
   }
 
-  imp1 <- sort(sortie1$forest$importance[,1], decreasing = TRUE, index.return=TRUE)
-  imp2 <- sort(sortie2$forest$importance[,1], decreasing = TRUE, index.return=TRUE)
+  if(!cforest){
+    imp1 <- sort(sortie1$forest$importance[,1], decreasing = TRUE, index.return=TRUE)
+    imp2 <- sort(sortie2$forest$importance[,1], decreasing = TRUE, index.return=TRUE)
+  } else {
+    imp1 <- sort(varimp(sortie1$forest, conditional=conditionalVI), decreasing = TRUE, index.return=TRUE)
+    imp2 <- sort(varimp(sortie2$forest, conditional=conditionalVI), decreasing = TRUE, index.return=TRUE)
+  }
 
   ss <- matrix(NA,length(eta),length(nvars))
   for (i in 1:length(eta)){
