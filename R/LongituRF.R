@@ -1312,7 +1312,8 @@ REEMtree <- function(X,Y,id,Z,iter=10, time, sto, delta = 0.001){
     }
 
     tree <- rpart(ystar~.,as.data.frame(X))
-    Phi <- matrix(0,length(Y), length(unique(tree$where)))
+    nnodes <- length(unique(tree$frame$yval[tree$where])) # predicted values at terminal nodes
+    Phi <- matrix(0,length(Y), nnodes)
     feuilles <- predict(tree,as.data.frame(X))
     leaf <- unique(feuilles)
     for (p in 1:length(leaf)){
@@ -1322,11 +1323,11 @@ REEMtree <- function(X,Y,id,Z,iter=10, time, sto, delta = 0.001){
 
     beta <- Moy_sto(id,Btilde,sigmahat,Phi,Y,Z,sto,time,sigma2) ### fit des feuilles
 
-    for (k in 1:length(unique(tree$where))){
-      ou <- which(tree$frame[,5]==leaf[k])
-      lee <- which(tree$frame[,1]=="<leaf>")
+    for (k in 1:nnodes){
+      ou <- which(tree$frame[,"yval"]==leaf[k])
+      lee <- which(tree$frame[,"var"]=="<leaf>")
       w <- intersect(ou,lee)
-      tree$frame[w,5] <- beta[k]
+      tree$frame[w,"yval"] <- beta[k]
     }
     fhat <- predict(tree, as.data.frame(X))
     for (k in 1:nind){ ### calcul des effets al?atoires par individu
