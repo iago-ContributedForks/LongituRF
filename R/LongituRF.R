@@ -1314,7 +1314,7 @@ REEMtree <- function(X,Y,id,Z,iter=10, time, sto, delta = 0.001){
     tree <- rpart(ystar~.,as.data.frame(X))
     nnodes <- length(unique(tree$frame$yval[tree$where])) # predicted values at terminal nodes
     Phi <- matrix(0,length(Y), nnodes)
-    feuilles <- predict(tree,as.data.frame(X))
+    feuilles <- as.matrix(predict(tree,as.data.frame(X), type = "matrix"))[,1]
     leaf <- unique(feuilles)
     for (p in 1:length(leaf)){
       w <- which(feuilles==leaf[p])
