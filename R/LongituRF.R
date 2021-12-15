@@ -692,8 +692,8 @@ Moy <- function(id,Btilde,sigmahat,Phi,Y,Z){
   for (i in 1:nind){
     w <- which(id==unique(id)[i])
     V <- Z[w,, drop=FALSE]%*%Btilde%*%t(Z[w,, drop=FALSE])+diag(as.numeric(sigmahat),length(w),length(w))
-    S1 <- S1 + t(Phi[w,, drop=FALSE])%*%solve(V)%*%Phi[w,, drop=FALSE]
-    S2 <- S2 + t(Phi[w,, drop = FALSE])%*%solve(V)%*%Y[w]
+    S1 <- S1 + t(Phi[w,, drop=FALSE])%*%solve(V)%*%Phi[w,, drop=FALSE] # square matrix of dimension nnodes
+    S2 <- S2 + t(Phi[w,, drop = FALSE])%*%solve(V)%*%Y[w] # nnodes rows x 1 colum # nnodes rows x 1 columnn
   }
   return(solve(S1)%*%S2)
 }
@@ -1272,12 +1272,14 @@ REEMtree <- function(X,Y,id,Z,iter=10, time, sto, delta = 0.001){
         # next is the corresponding step to REEMtree::REEMtree
         # adjtarg <- unique(cbind(tree$where, predict(lmefit, level = 0)))
         # tree$frame[adjtarg[, 1], ]$yval <- adjtarg[, 2]
+	# further w keeps all leaves (terminal nodes) equal to a certain value leaf[k]; therefore nnodes = length(leaf) (unique(tree$frame$yval[tree$where]))
         for (k in 1:nnodes){
           ou <- which(tree$frame[,"yval"]==leaf[k])
           lee <- which(tree$frame[,"var"]=="<leaf>")
           w <- intersect(ou,lee)
           tree$frame[w,"yval"] <- beta[k]
         }
+        # through next steps update btilde and other parameters
         fhat <- predict(tree, as.data.frame(X))
         for (k in 1:nind){ ### calcul des effets al?atoires par individu
           indiv <- which(id==unique(id)[k])
@@ -1288,6 +1290,7 @@ REEMtree <- function(X,Y,id,Z,iter=10, time, sto, delta = 0.001){
         sigm <- sigmahat
         sigmahat <- sig(sigmahat,id, Z, epsilonhat, Btilde) ##### MAJ de la variance des erreurs ! ici que doit se trouver le probl?me !
         Btilde  <- bay(btilde,Btilde,Z,id,sigm) #### MAJ des param?tres de la variance des effets al?atoires.
+        # compute and check the log-likelihood
         Vrai <- c(Vrai, logV(Y,fhat,Z[,,drop=FALSE],time,id,Btilde,0,sigmahat,sto))
         if (i>1) inc <- (Vrai[i-1]-Vrai[i])/Vrai[i-1]
         if (inc <  delta) {
