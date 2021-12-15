@@ -1192,10 +1192,12 @@ MERT <- function(X,Y,id,Z,iter=100,time, sto, delta = 0.001, conditional = FALSE
 #' @param time [vector]: Is the vector of the measurement times associated with the trajectories in \code{Y},\code{Z} and \code{X}.
 #' @param sto [character]: Defines the covariance function of the stochastic process, can be either \code{"none"} for no stochastic process, \code{"BM"} for Brownian motion, \code{OrnUhl} for standard Ornstein-Uhlenbeck process, \code{BBridge} for Brownian Bridge, \code{fbm} for Fractional Brownian motion; can also be a function defined by the user.
 #' @param delta [numeric]: The algorithm stops when the difference in log likelihood between two iterations is smaller than \code{delta}. The default value is set to O.O01
+#' @param conditional [logical]: Determines if the regression tree uses conditional inference trees in \code{\link[party]{cforest}} as implemented by Hothorn et al. (2006) in \code{\link[party]{ctree}} (\code{TRUE}) or the usual regression trees as implemented in \code{[rpart]{rpart}}, being this case (\code{TRUE}) the default.
 #'
 #'
 #' @import stats
 #' @import rpart
+#' @import party
 #'
 #'
 #'
@@ -1227,7 +1229,7 @@ MERT <- function(X,Y,id,Z,iter=100,time, sto, delta = 0.001, conditional = FALSE
 #' sreemt$omega # are the predicted stochastic processes.
 #' plot(sreemt$Vraisemblance) #evolution of the log-likelihood.
 #'
-REEMtree <- function(X,Y,id,Z,iter=10, time, sto, delta = 0.001){
+REEMtree <- function(X,Y,id,Z,iter=10, time, sto, delta = 0.001, conditional = FALSE){
   q <- dim(Z)[2]
   nind <- length(unique(id))
   btilde <- matrix(0,nind,q) #### Pour la ligne i, on a les effets al?atoires de l'individu i
@@ -1251,15 +1253,26 @@ REEMtree <- function(X,Y,id,Z,iter=10, time, sto, delta = 0.001){
           ystar[indiv] <- Y[indiv]- Z[indiv,, drop=FALSE]%*%btilde[k,]
         }
 
-        tree <- rpart(ystar~.,as.data.frame(X))
-        # next both are essentially the same for regression trees; not for classification trees
-        # nnodes <- length(unique(tree$where)) # terminal nodes
-        nnodes <- length(unique(tree$frame$yval[tree$where])) # predicted values at terminal nodes
+        if(!conditional){
+          tree <- rpart(ystar~.,as.data.frame(X))
+          # next both are essentially the same for regression trees; not for classification trees
+          # nnodes <- length(unique(tree$where)) # terminal nodes
+          # nnodes <- length(unique(tree$frame$yval[tree$where])) # predicted values at terminal nodes
+          # leaf <- unique(tree$frame$yval[tree$where])
 
+          # feuilles <- predict(tree,as.data.frame(X))
+          feuilles <- as.matrix(predict(tree,as.data.frame(X), type = "matrix"))[,1]
+          # leaf <- unique(feuilles) # this is == unique(tree$frame$yval[tree$where])
+        } else{
+          citdata <- cbind(ystar, as.data.frame(X))
+          tree <- ctree(ystar~., citdata)
+          feuilles <- Predict(tree, as.data.frame(X))
+        }
+        leaf <- unique(feuilles)
+        nnodes <- length(leaf)
         Phi <- matrix(0,length(Y), nnodes)
-        feuilles <- as.matrix(predict(tree,as.data.frame(X), type = "matrix"))[,1]
-        leaf <- unique(feuilles) # this is == unique(tree$frame$yval[tree$where])
-        for (p in 1:nnodes){  # warning!: it can be length(leaf) != length(unique(tree$where)): fit <- rpart(Kyphosis ~ Age + Number + Start, data = kyphosis)
+
+        for (p in 1:nnodes){
           # w <- which(feuilles==tree$frame$yval[unique(tree$where)[p]])
           w <- which(feuilles==leaf[p])
           Phi[unique(w),p] <- 1
@@ -1271,10 +1284,13 @@ REEMtree <- function(X,Y,id,Z,iter=10, time, sto, delta = 0.001){
         # next is the corresponding step to REEMtree::REEMtree
         # adjtarg <- unique(cbind(tree$where, predict(lmefit, level = 0)))
         # tree$frame[adjtarg[, 1], ]$yval <- adjtarg[, 2]
-	# further w keeps all leaves (terminal nodes) equal to a certain value leaf[k]; therefore nnodes = length(leaf) (unique(tree$frame$yval[tree$where]))
+        # for each leaf-predicted value:
+        # ou = all the leaf (-ves)-nodes (grally 1, at least for regression trees) with that predicted value
+        # lee = TERMINAL nodes/leaf(-ves)
+        # further w keeps all leaves (terminal nodes) equal to a certain value leaf[k]; therefore nnodes = length(leaf) (unique(tree$frame$yval[tree$where]))
+        lee <- which(tree$frame[,"var"]=="<leaf>")
         for (k in 1:nnodes){
           ou <- which(tree$frame[,"yval"]==leaf[k])
-          lee <- which(tree$frame[,"var"]=="<leaf>")
           w <- intersect(ou,lee)
           tree$frame[w,"yval"] <- beta[k]
         }
