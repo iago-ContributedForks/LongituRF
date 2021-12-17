@@ -84,7 +84,7 @@ MERF <- function(X,Y,id,Z,iter=100,mtry=ceiling(ncol(X)/3),ntree=500, time, sto,
   OOB <- NULL
 
   if(!is.logical(conditional) || length(conditional) != 1 || is.na(conditional)){
-	  conditional <- FALSE
+    conditional <- FALSE
   }
   if (class(sto)=="character"){
     if (sto=="fbm"){
@@ -108,15 +108,15 @@ MERF <- function(X,Y,id,Z,iter=100,mtry=ceiling(ncol(X)/3),ntree=500, time, sto,
           ystar[indiv] <- Y[indiv]- Z[indiv,, drop=FALSE]%*%btilde[k,]- omega[indiv]
         }
 
-	if(!conditional){
-		forest <- randomForest(as.data.frame(X),ystar,mtry=mtry,ntree=ntree, importance = TRUE) ### on construit l'arbre
-		fhat <- predict(forest) #### pr?diction avec l'arbre
-		OOB[i] <- forest$mse[ntree]
-	} else{
-		citdata <- cbind(ystar, as.data.frame(X))
-		forest <- cforest(ystar ~ ., data = citdata, controls = cforest_unbiased(mtry = mtry, ntree = ntree))
-		fhat <- predict(forest, OOB = TRUE, type = "response") #### pr?diction avec l'arbre
-	}
+        if(!conditional){
+          forest <- randomForest(as.data.frame(X),ystar,mtry=mtry,ntree=ntree, importance = TRUE) ### on construit l'arbre
+          fhat <- predict(forest) #### pr?diction avec l'arbre
+          OOB[i] <- forest$mse[ntree]
+        } else{
+          citdata <- cbind(ystar, as.data.frame(X))
+          forest <- cforest(ystar ~ ., data = citdata, controls = cforest_unbiased(mtry = mtry, ntree = ntree))
+          fhat <- predict(forest, OOB = TRUE, type = "response") #### pr?diction avec l'arbre
+        }
         for (k in 1:nind){ ### calcul des effets al?atoires par individu
           indiv <- which(id==unique(id)[k])
           K <- cov.fbm(time[indiv], h)
@@ -136,19 +136,19 @@ MERF <- function(X,Y,id,Z,iter=100,mtry=ceiling(ncol(X)/3),ntree=500, time, sto,
         if (i>1) inc <- (Vrai[i-1]-Vrai[i])/Vrai[i-1]
         if (inc < delta) {
           print(paste0("stopped after ", i, " iterations."))
-	if(!conditional){
-          sortie <- list(forest=forest,random_effects=btilde,var_random_effects=Btilde,sigma=sigmahat,sigma_sto=sigma2, id_btilde=unique(id), sto= sto, vraisemblance = Vrai,id=id, time =time, Hurst=h, OOB =OOB, omega=omega2)
-	} else {
-          sortie <- list(forest=forest,random_effects=btilde,var_random_effects=Btilde,sigma=sigmahat,sigma_sto=sigma2, id_btilde=unique(id), sto= sto, vraisemblance = Vrai,id=id, time =time, Hurst=h, omega=omega2)
-	}
+          if(!conditional){
+            sortie <- list(forest=forest,random_effects=btilde,var_random_effects=Btilde,sigma=sigmahat,sigma_sto=sigma2, id_btilde=unique(id), sto= sto, vraisemblance = Vrai,id=id, time =time, Hurst=h, OOB =OOB, omega=omega2)
+          } else {
+            sortie <- list(forest=forest,random_effects=btilde,var_random_effects=Btilde,sigma=sigmahat,sigma_sto=sigma2, id_btilde=unique(id), sto= sto, vraisemblance = Vrai,id=id, time =time, Hurst=h, omega=omega2)
+          }
           class(sortie)<-"longituRF"
           return(sortie)
         }
       }
       if(!conditional){
-	      sortie <- list(forest=forest,random_effects=btilde,var_random_effects=Btilde,sigma=sigmahat, id_btilde=unique(id),sigma_sto=sigma2,omega=omega2, sigma_sto =sigma2, time = time, sto= sto, Hurst =h, id=id, Vraisemblance=Vrai, OOB =OOB)
+        sortie <- list(forest=forest,random_effects=btilde,var_random_effects=Btilde,sigma=sigmahat, id_btilde=unique(id),sigma_sto=sigma2,omega=omega2, sigma_sto =sigma2, time = time, sto= sto, Hurst =h, id=id, Vraisemblance=Vrai, OOB =OOB)
       } else {
-	      sortie <- list(forest=forest,random_effects=btilde,var_random_effects=Btilde,sigma=sigmahat, id_btilde=unique(id),sigma_sto=sigma2,omega=omega2, sigma_sto =sigma2, time = time, sto= sto, Hurst =h, id=id, Vraisemblance=Vrai)
+        sortie <- list(forest=forest,random_effects=btilde,var_random_effects=Btilde,sigma=sigmahat, id_btilde=unique(id),sigma_sto=sigma2,omega=omega2, sigma_sto =sigma2, time = time, sto= sto, Hurst =h, id=id, Vraisemblance=Vrai)
       }
       class(sortie) <- "longituRF"
       return(sortie)
@@ -176,15 +176,15 @@ MERF <- function(X,Y,id,Z,iter=100,mtry=ceiling(ncol(X)/3),ntree=500, time, sto,
           ystar[indiv] <- Y[indiv]- Z[indiv,, drop=FALSE]%*%btilde[k,]- omega[indiv]
         }
 
-	if(!conditional){
-		forest <- randomForest(as.data.frame(X),ystar,mtry=mtry,ntree=ntree, importance = TRUE) ### on construit l'arbre
-		fhat <- predict(forest) #### pr?diction avec l'arbre
-		OOB[i] <- forest$mse[ntree]
-	} else{
-		citdata <- cbind(ystar, as.data.frame(X))
-		forest <- cforest(ystar ~ ., data = citdata, controls = cforest_unbiased(mtry = mtry, ntree = ntree))
-		fhat <- predict(forest, OOB = TRUE, type = "response") #### pr?diction avec l'arbre
-	}
+        if(!conditional){
+          forest <- randomForest(as.data.frame(X),ystar,mtry=mtry,ntree=ntree, importance = TRUE) ### on construit l'arbre
+          fhat <- predict(forest) #### pr?diction avec l'arbre
+          OOB[i] <- forest$mse[ntree]
+        } else{
+          citdata <- cbind(ystar, as.data.frame(X))
+          forest <- cforest(ystar ~ ., data = citdata, controls = cforest_unbiased(mtry = mtry, ntree = ntree))
+          fhat <- predict(forest, OOB = TRUE, type = "response") #### pr?diction avec l'arbre
+        }
         for (k in 1:nind){ ### calcul des effets al?atoires par individu
           indiv <- which(id==unique(id)[k])
           K <- cov.exp(time[indiv], alpha)
@@ -205,18 +205,18 @@ MERF <- function(X,Y,id,Z,iter=100,mtry=ceiling(ncol(X)/3),ntree=500, time, sto,
         if (inc < delta) {
           print(paste0("stopped after ", i, " iterations."))
           if(!conditional){
-		  sortie <- list(forest=forest,random_effects=btilde,var_random_effects=Btilde,sigma=sigmahat, id_btilde=unique(id), sto= sto, vraisemblance = Vrai,id=id, time=time, alpha = alpha, OOB =OOB, omega=omega2)
-	  } else {
-		  sortie <- list(forest=forest,random_effects=btilde,var_random_effects=Btilde,sigma=sigmahat, id_btilde=unique(id), sto= sto, vraisemblance = Vrai,id=id, time=time, alpha = alpha, omega=omega2)
-	  }
+            sortie <- list(forest=forest,random_effects=btilde,var_random_effects=Btilde,sigma=sigmahat, id_btilde=unique(id), sto= sto, vraisemblance = Vrai,id=id, time=time, alpha = alpha, OOB =OOB, omega=omega2)
+          } else {
+            sortie <- list(forest=forest,random_effects=btilde,var_random_effects=Btilde,sigma=sigmahat, id_btilde=unique(id), sto= sto, vraisemblance = Vrai,id=id, time=time, alpha = alpha, omega=omega2)
+          }
           class(sortie) <- "longituRF"
           return(sortie)
         }
       }
       if(!conditional){
-	      sortie <- list(forest=forest,random_effects=btilde,var_random_effects=Btilde,sigma=sigmahat, id_btilde=unique(id), omega=omega2, sigma_sto =sigma2, time = time, sto= sto, alpha=alpha, id=id, Vraisemblance=Vrai, OOB =OOB)
+        sortie <- list(forest=forest,random_effects=btilde,var_random_effects=Btilde,sigma=sigmahat, id_btilde=unique(id), omega=omega2, sigma_sto =sigma2, time = time, sto= sto, alpha=alpha, id=id, Vraisemblance=Vrai, OOB =OOB)
       } else{
-	      sortie <- list(forest=forest,random_effects=btilde,var_random_effects=Btilde,sigma=sigmahat, id_btilde=unique(id), omega=omega2, sigma_sto =sigma2, time = time, sto= sto, alpha=alpha, id=id, Vraisemblance=Vrai)
+        sortie <- list(forest=forest,random_effects=btilde,var_random_effects=Btilde,sigma=sigmahat, id_btilde=unique(id), omega=omega2, sigma_sto =sigma2, time = time, sto= sto, alpha=alpha, id=id, Vraisemblance=Vrai)
       }
       class(sortie) <- "longituRF"
       return(sortie)
@@ -230,15 +230,15 @@ MERF <- function(X,Y,id,Z,iter=100,mtry=ceiling(ncol(X)/3),ntree=500, time, sto,
           ystar[indiv] <- Y[indiv]- Z[indiv,,drop=FALSE]%*%btilde[k,]
         }
 
-	if(!conditional){
-		forest <- randomForest(as.data.frame(X),ystar,mtry=mtry,ntree=ntree, importance = TRUE) ### on construit l'arbre
-		fhat <- predict(forest) #### pr?diction avec l'arbre
-		OOB[i] <- forest$mse[ntree]
-	} else{
-		citdata <- cbind(ystar, as.data.frame(X))
-		forest <- cforest(ystar ~ ., data = citdata, controls = cforest_unbiased(mtry = mtry, ntree = ntree))
-		fhat <- predict(forest, OOB = TRUE, type = "response") #### pr?diction avec l'arbre
-	}
+        if(!conditional){
+          forest <- randomForest(as.data.frame(X),ystar,mtry=mtry,ntree=ntree, importance = TRUE) ### on construit l'arbre
+          fhat <- predict(forest) #### pr?diction avec l'arbre
+          OOB[i] <- forest$mse[ntree]
+        } else{
+          citdata <- cbind(ystar, as.data.frame(X))
+          forest <- cforest(ystar ~ ., data = citdata, controls = cforest_unbiased(mtry = mtry, ntree = ntree))
+          fhat <- predict(forest, OOB = TRUE, type = "response") #### pr?diction avec l'arbre
+        }
         for (k in 1:nind){
           indiv <- which(id==unique(id)[k])
           V <- Z[indiv,, drop=FALSE]%*%Btilde%*%t(Z[indiv,, drop=FALSE])+diag(as.numeric(sigmahat),length(indiv),length(indiv))
@@ -254,18 +254,18 @@ MERF <- function(X,Y,id,Z,iter=100,mtry=ceiling(ncol(X)/3),ntree=500, time, sto,
         if (inc < delta) {
           print(paste0("stopped after ", i, " iterations."))
           if(!conditional){
-		  sortie <- list(forest=forest,random_effects=btilde,var_random_effects=Btilde,sigma=sigmahat, id_btilde=unique(id), sto= sto, vraisemblance = Vrai,id=id, time=time, OOB =OOB)
-	  } else {
-		  sortie <- list(forest=forest,random_effects=btilde,var_random_effects=Btilde,sigma=sigmahat, id_btilde=unique(id), sto= sto, vraisemblance = Vrai,id=id, time=time)
-	  }
+            sortie <- list(forest=forest,random_effects=btilde,var_random_effects=Btilde,sigma=sigmahat, id_btilde=unique(id), sto= sto, vraisemblance = Vrai,id=id, time=time, OOB =OOB)
+          } else {
+            sortie <- list(forest=forest,random_effects=btilde,var_random_effects=Btilde,sigma=sigmahat, id_btilde=unique(id), sto= sto, vraisemblance = Vrai,id=id, time=time)
+          }
           class(sortie) <- "longituRF"
           return(sortie)
         }
       }
       if(!conditional){
-	      sortie <- list(forest=forest,random_effects=btilde,var_random_effects=Btilde,sigma=sigmahat, id_btilde=unique(id), sto= sto, vraisemblance=Vrai,id=id, time=time, OOB =OOB)
+        sortie <- list(forest=forest,random_effects=btilde,var_random_effects=Btilde,sigma=sigmahat, id_btilde=unique(id), sto= sto, vraisemblance=Vrai,id=id, time=time, OOB =OOB)
       } else{
-	      sortie <- list(forest=forest,random_effects=btilde,var_random_effects=Btilde,sigma=sigmahat, id_btilde=unique(id), sto= sto, vraisemblance=Vrai,id=id, time=time)
+        sortie <- list(forest=forest,random_effects=btilde,var_random_effects=Btilde,sigma=sigmahat, id_btilde=unique(id), sto= sto, vraisemblance=Vrai,id=id, time=time)
       }
       class(sortie) <- "longituRF"
       return(sortie)
@@ -279,13 +279,13 @@ MERF <- function(X,Y,id,Z,iter=100,mtry=ceiling(ncol(X)/3),ntree=500, time, sto,
     }
 
     if(!conditional){
-	    forest <- randomForest(as.data.frame(X),ystar,mtry=mtry,ntree=ntree, importance = TRUE) ### on construit l'arbre
-	    fhat <- predict(forest) #### pr?diction avec l'arbre
-	    OOB[i] <- forest$mse[ntree]
+      forest <- randomForest(as.data.frame(X),ystar,mtry=mtry,ntree=ntree, importance = TRUE) ### on construit l'arbre
+      fhat <- predict(forest) #### pr?diction avec l'arbre
+      OOB[i] <- forest$mse[ntree]
     } else{
-	    citdata <- cbind(ystar, as.data.frame(X))
-	    forest <- cforest(ystar ~ ., data = citdata, controls = cforest_unbiased(mtry = mtry, ntree = ntree))
-	    fhat <- predict(forest, OOB = TRUE, type = "response") #### pr?diction avec l'arbre
+      citdata <- cbind(ystar, as.data.frame(X))
+      forest <- cforest(ystar ~ ., data = citdata, controls = cforest_unbiased(mtry = mtry, ntree = ntree))
+      fhat <- predict(forest, OOB = TRUE, type = "response") #### pr?diction avec l'arbre
     }
     for (k in 1:nind){
       indiv <- which(id==unique(id)[k])
@@ -305,18 +305,18 @@ MERF <- function(X,Y,id,Z,iter=100,mtry=ceiling(ncol(X)/3),ntree=500, time, sto,
     if (inc < delta) {
       print(paste0("stopped after ", i, " iterations."))
       if(!conditional){
-	      sortie <- list(forest=forest,random_effects=btilde,var_random_effects=Btilde,sigma=sigmahat, id_btilde=unique(id), omega=omega, sigma_sto =sigma2, time = time, sto= sto,Vraisemblance=Vrai,id=id, OOB =OOB)
+        sortie <- list(forest=forest,random_effects=btilde,var_random_effects=Btilde,sigma=sigmahat, id_btilde=unique(id), omega=omega, sigma_sto =sigma2, time = time, sto= sto,Vraisemblance=Vrai,id=id, OOB =OOB)
       } else{
-	      sortie <- list(forest=forest,random_effects=btilde,var_random_effects=Btilde,sigma=sigmahat, id_btilde=unique(id), omega=omega, sigma_sto =sigma2, time = time, sto= sto,Vraisemblance=Vrai,id=id)
+        sortie <- list(forest=forest,random_effects=btilde,var_random_effects=Btilde,sigma=sigmahat, id_btilde=unique(id), omega=omega, sigma_sto =sigma2, time = time, sto= sto,Vraisemblance=Vrai,id=id)
       }
       class(sortie) <- "longituRF"
       return(sortie)
     }
   }
   if(!conditional){
-	  sortie <- list(forest=forest,random_effects=btilde,var_random_effects=Btilde,sigma=sigmahat, id_btilde=unique(id),omega=omega, sigma_sto =sigma2, time = time, sto= sto,Vraisemblance=Vrai,id=id, OOB =OOB)
+    sortie <- list(forest=forest,random_effects=btilde,var_random_effects=Btilde,sigma=sigmahat, id_btilde=unique(id),omega=omega, sigma_sto =sigma2, time = time, sto= sto,Vraisemblance=Vrai,id=id, OOB =OOB)
   } else {
-	  sortie <- list(forest=forest,random_effects=btilde,var_random_effects=Btilde,sigma=sigmahat, id_btilde=unique(id),omega=omega, sigma_sto =sigma2, time = time, sto= sto,Vraisemblance=Vrai,id=id)
+    sortie <- list(forest=forest,random_effects=btilde,var_random_effects=Btilde,sigma=sigmahat, id_btilde=unique(id),omega=omega, sigma_sto =sigma2, time = time, sto= sto,Vraisemblance=Vrai,id=id)
   }
   class(sortie) <- "longituRF"
   return(sortie)
@@ -431,7 +431,24 @@ gam_sto <- function(sigma,id,Z, Btilde, time, sigma2,sto, omega){
 predict.longituRF <- function(object, X,Z,id,time,...){
   n <- length(unique(id))
   id_btilde <- object$id_btilde
-  f <- predict(object$forest,as.data.frame(X))
+  if(class(object$forest) == "BinaryTree"){
+    f <- Predict(object$forest,as.data.frame(X))
+    if(exists("beta", object)){
+	    leaf <- unique(f)
+	    nnodes <- length(object$beta)
+	    if(length(leaf) != nnodes){
+		    stop("Distinct predicted values are not in 1:1 correspondence with tree leaves")
+	    }
+	    aux <- f
+	    for(p in seq_len(nnodes)){
+		    f[which(aux == leaf[p])] <- object$beta[p]
+	    }
+	    rm(aux)
+    }
+  } else {
+    f <- predict(object$forest,as.data.frame(X))
+  }
+
   Time <- object$time
   id_btilde <- object$id_btilde
   Ypred <- rep(0,length(id))
@@ -1281,21 +1298,15 @@ REEMtree <- function(X,Y,id,Z,iter=10, time, sto, delta = 0.001, conditional = F
         beta <- Moy(id,Btilde,sigmahat,Phi,Y,Z) ### fit des feuilles
         # this corresponds in some way with fixef(lmefit) + fixef(lmefit)["(Intercept)"] (REEMtree::REEMtree)
 
-        # next is the corresponding step to REEMtree::REEMtree
-        # adjtarg <- unique(cbind(tree$where, predict(lmefit, level = 0)))
-        # tree$frame[adjtarg[, 1], ]$yval <- adjtarg[, 2]
-        # for each leaf-predicted value:
-        # ou = all the leaf (-ves)-nodes (grally 1, at least for regression trees) with that predicted value
-        # lee = TERMINAL nodes/leaf(-ves)
-        # further w keeps all leaves (terminal nodes) equal to a certain value leaf[k]; therefore nnodes = length(leaf) (unique(tree$frame$yval[tree$where]))
-        lee <- which(tree$frame[,"var"]=="<leaf>")
-        for (k in 1:nnodes){
-          ou <- which(tree$frame[,"yval"]==leaf[k])
-          w <- intersect(ou,lee)
-          tree$frame[w,"yval"] <- beta[k]
+
+        # Replace the predicted response at each terminal node of the tree with the estimated population level predicted response from the LMM fit
+        fhat <- feuilles
+        for(p in seq_len(nnodes)){
+          fhat[which(feuilles==leaf[p])] <- beta[p]
         }
+
+
         # through next steps update btilde and other parameters
-        fhat <- predict(tree, as.data.frame(X))
         for (k in 1:nind){ ### calcul des effets al?atoires par individu
           indiv <- which(id==unique(id)[k])
           V <- Z[indiv,, drop=FALSE]%*%Btilde%*%t(Z[indiv,, drop=FALSE])+diag(as.numeric(sigmahat),length(indiv),length(indiv))
@@ -1310,7 +1321,25 @@ REEMtree <- function(X,Y,id,Z,iter=10, time, sto, delta = 0.001, conditional = F
         if (i>1) inc <- (Vrai[i-1]-Vrai[i])/Vrai[i-1]
         if (inc <  delta) {
           print(paste0("stopped after ", i, " iterations."))
-          sortie <- list(forest=tree,random_effects=btilde,var_random_effects=Btilde,sigma=sigmahat, id_btilde=unique(id), sto= sto, vraisemblance = Vrai,id=id, time=time)
+          if(!conditional){
+            # next is the corresponding step to REEMtree::REEMtree
+            # adjtarg <- unique(cbind(tree$where, predict(lmefit, level = 0)))
+            # tree$frame[adjtarg[, 1], ]$yval <- adjtarg[, 2]
+            # for each leaf-predicted value:
+            # ou = all the leaf (-ves)-nodes (grally 1, at least for regression trees) with that predicted value
+            # lee = TERMINAL nodes/leaf(-ves)
+            # further w keeps all leaves (terminal nodes) equal to a certain value leaf[k]; therefore nnodes = length(leaf) (unique(tree$frame$yval[tree$where]))
+            lee <- which(tree$frame[,"var"]=="<leaf>")
+            for (k in 1:nnodes){
+              ou <- which(tree$frame[,"yval"]==leaf[k])
+              w <- intersect(ou,lee)
+              tree$frame[w,"yval"] <- beta[k]
+            }
+            sortie <- list(forest=tree,random_effects=btilde,var_random_effects=Btilde,sigma=sigmahat, id_btilde=unique(id), sto= sto, vraisemblance = Vrai,id=id, time=time)
+          } else if(conditional){
+            # the tree produces a non-correct prediction, it needs to be corrected with beta values
+            sortie <- list(forest=tree,beta=beta,random_effects=btilde,var_random_effects=Btilde,sigma=sigmahat, id_btilde=unique(id), sto= sto, vraisemblance = Vrai,id=id, time=time)
+          }
           class(sortie) <- "longituRF"
           return(sortie)
         }
