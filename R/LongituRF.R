@@ -1272,14 +1272,7 @@ REEMtree <- function(X,Y,id,Z,iter=10, time, sto, delta = 0.001, conditional = F
 
         if(!conditional){
           tree <- rpart(ystar~.,as.data.frame(X))
-          # next both are essentially the same for regression trees; not for classification trees
-          # nnodes <- length(unique(tree$where)) # terminal nodes
-          # nnodes <- length(unique(tree$frame$yval[tree$where])) # predicted values at terminal nodes
-          # leaf <- unique(tree$frame$yval[tree$where])
-
-          # feuilles <- predict(tree,as.data.frame(X))
-          feuilles <- as.matrix(predict(tree,as.data.frame(X), type = "matrix"))[,1]
-          # leaf <- unique(feuilles) # this is == unique(tree$frame$yval[tree$where])
+          feuilles <- predict(tree,as.data.frame(X))
         } else{
           citdata <- cbind(ystar, as.data.frame(X))
           tree <- ctree(ystar~., citdata)
@@ -1290,14 +1283,11 @@ REEMtree <- function(X,Y,id,Z,iter=10, time, sto, delta = 0.001, conditional = F
         Phi <- matrix(0,length(Y), nnodes)
 
         for (p in 1:nnodes){
-          # w <- which(feuilles==tree$frame$yval[unique(tree$where)[p]])
           w <- which(feuilles==leaf[p])
           Phi[unique(w),p] <- 1
         }
 
         beta <- Moy(id,Btilde,sigmahat,Phi,Y,Z) ### fit des feuilles
-        # this corresponds in some way with fixef(lmefit) + fixef(lmefit)["(Intercept)"] (REEMtree::REEMtree)
-
 
         # Replace the predicted response at each terminal node of the tree with the estimated population level predicted response from the LMM fit
         fhat <- feuilles
@@ -1322,13 +1312,6 @@ REEMtree <- function(X,Y,id,Z,iter=10, time, sto, delta = 0.001, conditional = F
         if (inc <  delta) {
           print(paste0("stopped after ", i, " iterations."))
           if(!conditional){
-            # next is the corresponding step to REEMtree::REEMtree
-            # adjtarg <- unique(cbind(tree$where, predict(lmefit, level = 0)))
-            # tree$frame[adjtarg[, 1], ]$yval <- adjtarg[, 2]
-            # for each leaf-predicted value:
-            # ou = all the leaf (-ves)-nodes (grally 1, at least for regression trees) with that predicted value
-            # lee = TERMINAL nodes/leaf(-ves)
-            # further w keeps all leaves (terminal nodes) equal to a certain value leaf[k]; therefore nnodes = length(leaf) (unique(tree$frame$yval[tree$where]))
             lee <- which(tree$frame[,"var"]=="<leaf>")
             for (k in 1:nnodes){
               ou <- which(tree$frame[,"yval"]==leaf[k])
@@ -1359,7 +1342,7 @@ REEMtree <- function(X,Y,id,Z,iter=10, time, sto, delta = 0.001, conditional = F
     tree <- rpart(ystar~.,as.data.frame(X))
     nnodes <- length(unique(tree$frame$yval[tree$where])) # predicted values at terminal nodes
     Phi <- matrix(0,length(Y), nnodes)
-    feuilles <- as.matrix(predict(tree,as.data.frame(X), type = "matrix"))[,1]
+    feuilles <- predict(tree,as.data.frame(X))
     leaf <- unique(feuilles)
     for (p in 1:length(leaf)){
       w <- which(feuilles==leaf[p])
