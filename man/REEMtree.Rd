@@ -4,7 +4,7 @@
 \alias{REEMtree}
 \title{(S)REEMtree algorithm}
 \usage{
-REEMtree(X, Y, id, Z, iter = 10, time, sto, delta = 0.001)
+REEMtree(X, Y, id, Z, iter = 10, time, sto, delta = 0.001, conditional = FALSE)
 }
 \arguments{
 \item{X}{[matrix]: A \code{N}x\code{p} matrix containing the \code{p} predictors of the fixed effects, column codes for a predictor.}
@@ -22,11 +22,14 @@ REEMtree(X, Y, id, Z, iter = 10, time, sto, delta = 0.001)
 \item{sto}{[character]: Defines the covariance function of the stochastic process, can be either \code{"none"} for no stochastic process, \code{"BM"} for Brownian motion, \code{OrnUhl} for standard Ornstein-Uhlenbeck process, \code{BBridge} for Brownian Bridge, \code{fbm} for Fractional Brownian motion; can also be a function defined by the user.}
 
 \item{delta}{[numeric]: The algorithm stops when the difference in log likelihood between two iterations is smaller than \code{delta}. The default value is set to O.O01}
+
+\item{conditional}{[logical]: Determines if the regression tree uses conditional inference trees as implemented by Hothorn et al. (2006) in \code{\link[party]{ctree}} (\code{TRUE}) or the usual regression trees as implemented in \code{[rpart]{rpart}}, being this case (\code{TRUE}) the default.}
 }
 \value{
 A fitted (S)REEMtree model which is a list of the following elements: \itemize{
 \item \code{forest:} Tree obtained at the last iteration.
-\item \code{random_effects :} Predictions of random effects for different trajectories.
+\item \code{beta:} predicted response values at the terminal nodes of the tree, only when \code{conditional==TRUE}. 
+\item \code{random_effects :} predictions of random effects for different trajectories.
 \item \code{id_btilde:} Identifiers of individuals associated with the predictions \code{random_effects}.
 \item \code{var_random_effects: } Estimation of the variance covariance matrix of random effects.
 \item \code{sigma_sto: } Estimation of the volatility parameter of the stochastic process.
@@ -56,5 +59,20 @@ sreemt$forest # is the fitted random forest (obtained at the last iteration).
 sreemt$random_effects # are the predicted random effects for each individual.
 sreemt$omega # are the predicted stochastic processes.
 plot(sreemt$Vraisemblance) #evolution of the log-likelihood.
+csreemt <- REEMtree(X=data$X,Y=data$Y,Z=data$Z,id=data$id,time=data$time,
+sto="BM", delta=0.0001, conditional=TRUE)
+csreemt$forest # is the fitted random forest (obtained at the last iteration).
+csreemt$random_effects # are the predicted random effects for each individual.
+csreemt$omega # are the predicted stochastic processes.
+plot(csreemt$Vraisemblance) #evolution of the log-likelihood.
 
+}
+\references{
+Rebecca J. Sela and Jeffrey S. Simonoff (2012). RE-EM trees: a data mining approach for longitudinal and clustered data. Machine Learning, 86(2), 169–207. \doi{10.1007/s10994-011-5258-3}
+
+Louis Capitaine, Robin Genuer, and Rodolphe Thiébaut (2020). Random forests for high-dimensional longitudinal data. Statistical Methods in Medical Research, 096228022094608. \doi{10.1177/0962280220946080}
+
+Leo Breiman (2001). Random Forests. Machine Learning, 45(1), 5–32.
+
+Torsten Hothorn, Kurt Hornik and Achim Zeileis (2006). Unbiased Recursive Partitioning: A Conditional Inference Framework. Journal of Computational and Graphical Statistics, 15(3), 651--674.
 }

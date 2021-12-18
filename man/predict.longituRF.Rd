@@ -2,7 +2,7 @@
 % Please edit documentation in R/LongituRF.R
 \name{predict.longituRF}
 \alias{predict.longituRF}
-\title{Predict with longitudinal trees and random forests.}
+\title{predict with longitudinal trees and random forests.}
 \usage{
 \method{predict}{longituRF}(object, X, Z, id, time, ...)
 }
@@ -23,7 +23,7 @@
 vector of the predicted output for the new observations.
 }
 \description{
-Predict with longitudinal trees and random forests.
+predict with longitudinal trees and random forests.
 }
 \examples{
 \donttest{

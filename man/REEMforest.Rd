@@ -41,7 +41,7 @@ REEMforest(
 \value{
 A fitted (S)REEMforest model which is a list of the following elements: \itemize{
 \item \code{forest:} Random forest obtained at the last iteration.
-\item \code{random_effects :} Predictions of random effects for different trajectories.
+\item \code{random_effects :} predictions of random effects for different trajectories.
 \item \code{id_btilde:} Identifiers of individuals associated with the predictions \code{random_effects}.
 \item \code{var_random_effects: } Estimation of the variance covariance matrix of random effects.
 \item \code{sigma_sto: } Estimation of the volatility parameter of the stochastic process.
