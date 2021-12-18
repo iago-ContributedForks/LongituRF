@@ -23,12 +23,12 @@ MERT(X, Y, id, Z, iter = 100, time, sto, delta = 0.001, conditional = FALSE)
 
 \item{delta}{[numeric]: The algorithm stops when the difference in log likelihood between two iterations is smaller than \code{delta}. The default value is set to O.O01}
 
-\item{conditional}{[logical]: Determines if the regression tree uses conditional inference trees in \code{\link[party]{cforest}} as implemented by Hothorn et al. (2006) in \code{\link[party]{ctree}} (\code{TRUE}) or the usual regression trees as implemented in \code{[rpart]{rpart}}, being this case (\code{TRUE}) the default.}
+\item{conditional}{[logical]: Determines if the regression tree uses conditional inference trees as implemented by Hothorn et al. (2006) in \code{\link[party]{ctree}} (\code{TRUE}) or the usual regression trees as implemented in \code{[rpart]{rpart}}, being this case (\code{TRUE}) the default.}
 }
 \value{
 A fitted (S)MERT model which is a list of the following elements: \itemize{
 \item \code{forest:} Tree obtained at the last iteration.
-\item \code{random_effects :} Predictions of random effects for different trajectories.
+\item \code{random_effects :} predictions of random effects for different trajectories.
 \item \code{id_btilde:} Identifiers of individuals associated with the predictions \code{random_effects}.
 \item \code{var_random_effects: } Estimation of the variance covariance matrix of random effects.
 \item \code{sigma_sto: } Estimation of the volatility parameter of the stochastic process.

@@ -24,7 +24,7 @@
 #' @import stats
 #' @return A fitted (S)MERF model which is a list of the following elements: \itemize{
 #' \item \code{forest:} Random forest obtained at the last iteration.
-#' \item \code{random_effects :} Predictions of random effects for different trajectories.
+#' \item \code{random_effects :} predictions of random effects for different trajectories.
 #' \item \code{id_btilde:} Identifiers of individuals associated with the predictions \code{random_effects}.
 #' \item \code{var_random_effects: } Estimation of the variance covariance matrix of random effects.
 #' \item \code{sigma_sto: } Estimation of the volatility parameter of the stochastic process.
@@ -382,7 +382,7 @@ gam_sto <- function(sigma,id,Z, Btilde, time, sigma2,sto, omega){
 }
 
 
-#' Predict with longitudinal trees and random forests.
+#' predict with longitudinal trees and random forests.
 #'
 #' @param object : a \code{longituRF} output of (S)MERF; (S)REEMforest; (S)MERT or (S)REEMtree function.
 #' @param X [matrix]: matrix of the fixed effects for the new observations to be predicted.
@@ -432,7 +432,7 @@ predict.longituRF <- function(object, X,Z,id,time,...){
   n <- length(unique(id))
   id_btilde <- object$id_btilde
   if(class(object$forest) == "BinaryTree"){
-    f <- Predict(object$forest,as.data.frame(X))
+    f <- predict(object$forest,as.data.frame(X))
     if(exists("beta", object)){
 	    leaf <- unique(f)
 	    nnodes <- length(object$beta)
@@ -742,7 +742,7 @@ Moy <- function(id,Btilde,sigmahat,Phi,Y,Z){
 #'
 #' @return A fitted (S)REEMforest model which is a list of the following elements: \itemize{
 #' \item \code{forest:} Random forest obtained at the last iteration.
-#' \item \code{random_effects :} Predictions of random effects for different trajectories.
+#' \item \code{random_effects :} predictions of random effects for different trajectories.
 #' \item \code{id_btilde:} Identifiers of individuals associated with the predictions \code{random_effects}.
 #' \item \code{var_random_effects: } Estimation of the variance covariance matrix of random effects.
 #' \item \code{sigma_sto: } Estimation of the volatility parameter of the stochastic process.
@@ -1039,7 +1039,7 @@ Moy_exp <- function(id,Btilde,sigmahat,Phi,Y,Z, alpha, time, sigma2){
 #' @param time [vector]: Is the vector of the measurement times associated with the trajectories in \code{Y},\code{Z} and \code{X}.
 #' @param sto [character]: Defines the covariance function of the stochastic process, can be either \code{"none"} for no stochastic process, \code{"BM"} for Brownian motion, \code{OrnUhl} for standard Ornstein-Uhlenbeck process, \code{BBridge} for Brownian Bridge, \code{fbm} for Fractional Brownian motion; can also be a function defined by the user.
 #' @param delta [numeric]: The algorithm stops when the difference in log likelihood between two iterations is smaller than \code{delta}. The default value is set to O.O01
-#' @param conditional [logical]: Determines if the regression tree uses conditional inference trees in \code{\link[party]{cforest}} as implemented by Hothorn et al. (2006) in \code{\link[party]{ctree}} (\code{TRUE}) or the usual regression trees as implemented in \code{[rpart]{rpart}}, being this case (\code{TRUE}) the default.
+#' @param conditional [logical]: Determines if the regression tree uses conditional inference trees as implemented by Hothorn et al. (2006) in \code{\link[party]{ctree}} (\code{TRUE}) or the usual regression trees as implemented in \code{[rpart]{rpart}}, being this case (\code{TRUE}) the default.
 #'
 #'
 #'
@@ -1051,7 +1051,7 @@ Moy_exp <- function(id,Btilde,sigmahat,Phi,Y,Z, alpha, time, sigma2){
 #'
 #' @return A fitted (S)MERT model which is a list of the following elements: \itemize{
 #' \item \code{forest:} Tree obtained at the last iteration.
-#' \item \code{random_effects :} Predictions of random effects for different trajectories.
+#' \item \code{random_effects :} predictions of random effects for different trajectories.
 #' \item \code{id_btilde:} Identifiers of individuals associated with the predictions \code{random_effects}.
 #' \item \code{var_random_effects: } Estimation of the variance covariance matrix of random effects.
 #' \item \code{sigma_sto: } Estimation of the volatility parameter of the stochastic process.
@@ -1190,6 +1190,26 @@ MERT <- function(X,Y,id,Z,iter=100,time, sto, delta = 0.001, conditional = FALSE
   return(sortie)
 }
 
+# After
+# names(beta) <- unique(tree@where)
+# the next function (used as feed_leaves(tree@tree))  would allow to modify the terminal leaves of the conditional inference trees
+
+# feed_leaves <- function(ctobject, xstr = ""){
+#   xstr <- paste0(xstr, sub("ctobject", "", deparse(substitute(ctobject))))
+#   if(ctobject$terminal){
+#     xstr <- paste0(xstr, "$prediction")
+#     eval(parse(text = paste(xstr, "<<-", beta[[as.character(ctobject$nodeID)]])))
+#   } else {
+#     Recall(ctobject$left, xstr = xstr)
+#     Recall(ctobject$right, xstr = xstr)
+#   }
+# }
+
+# but it has none consequence on the prediction functions/methods predict/predict_response,
+# so it only changes the not easily accessible prediction values on the terminal nodes.
+# Therefore, it seems to me that changing just the values associated with terminal nodes in tree object is a bit weird.
+# It is also applicable to rpart trees and to tree$frame$yval values, so I believe those trees should also be kept
+# as they are computed by rpart, returning the beta values to use with the predict function as for party::ctree
 
 #' (S)REEMtree algorithm
 #'
@@ -1209,7 +1229,7 @@ MERT <- function(X,Y,id,Z,iter=100,time, sto, delta = 0.001, conditional = FALSE
 #' @param time [vector]: Is the vector of the measurement times associated with the trajectories in \code{Y},\code{Z} and \code{X}.
 #' @param sto [character]: Defines the covariance function of the stochastic process, can be either \code{"none"} for no stochastic process, \code{"BM"} for Brownian motion, \code{OrnUhl} for standard Ornstein-Uhlenbeck process, \code{BBridge} for Brownian Bridge, \code{fbm} for Fractional Brownian motion; can also be a function defined by the user.
 #' @param delta [numeric]: The algorithm stops when the difference in log likelihood between two iterations is smaller than \code{delta}. The default value is set to O.O01
-#' @param conditional [logical]: Determines if the regression tree uses conditional inference trees in \code{\link[party]{cforest}} as implemented by Hothorn et al. (2006) in \code{\link[party]{ctree}} (\code{TRUE}) or the usual regression trees as implemented in \code{[rpart]{rpart}}, being this case (\code{TRUE}) the default.
+#' @param conditional [logical]: Determines if the regression tree uses conditional inference trees as implemented by Hothorn et al. (2006) in \code{\link[party]{ctree}} (\code{TRUE}) or the usual regression trees as implemented in \code{[rpart]{rpart}}, being this case (\code{TRUE}) the default.
 #'
 #'
 #' @import stats
@@ -1220,8 +1240,8 @@ MERT <- function(X,Y,id,Z,iter=100,time, sto, delta = 0.001, conditional = FALSE
 #'
 #' @return A fitted (S)REEMtree model which is a list of the following elements: \itemize{
 #' \item \code{forest:} Tree obtained at the last iteration.
-#' \item \code{beta:} Predicted response values at the terminal nodes of the tree, only when \code{conditional==TRUE}. 
-#' \item \code{random_effects :} Predictions of random effects for different trajectories.
+#' \item \code{beta:} predicted response values at the terminal nodes of the tree, only when \code{conditional==TRUE}. 
+#' \item \code{random_effects :} predictions of random effects for different trajectories.
 #' \item \code{id_btilde:} Identifiers of individuals associated with the predictions \code{random_effects}.
 #' \item \code{var_random_effects: } Estimation of the variance covariance matrix of random effects.
 #' \item \code{sigma_sto: } Estimation of the volatility parameter of the stochastic process.
@@ -1233,6 +1253,18 @@ MERT <- function(X,Y,id,Z,iter=100,time, sto, delta = 0.001, conditional = FALSE
 #' }
 #'
 #' @export
+#'
+#'
+#' @references
+#'
+#' Rebecca J. Sela and Jeffrey S. Simonoff (2012). RE-EM trees: a data mining approach for longitudinal and clustered data. Machine Learning, 86(2), 169–207. \doi{10.1007/s10994-011-5258-3}
+#'
+#' Louis Capitaine, Robin Genuer, and Rodolphe Thiébaut (2020). Random forests for high-dimensional longitudinal data. Statistical Methods in Medical Research, 096228022094608. \doi{10.1177/0962280220946080}
+#'
+#' Leo Breiman (2001). Random Forests. Machine Learning, 45(1), 5–32.
+#'
+#' Torsten Hothorn, Kurt Hornik and Achim Zeileis (2006). Unbiased Recursive Partitioning: A Conditional Inference Framework. Journal of Computational and Graphical Statistics, 15(3), 651--674.
+#'
 #'
 #' @examples
 #' set.seed(123)
@@ -1246,6 +1278,12 @@ MERT <- function(X,Y,id,Z,iter=100,time, sto, delta = 0.001, conditional = FALSE
 #' sreemt$random_effects # are the predicted random effects for each individual.
 #' sreemt$omega # are the predicted stochastic processes.
 #' plot(sreemt$Vraisemblance) #evolution of the log-likelihood.
+#' csreemt <- REEMtree(X=data$X,Y=data$Y,Z=data$Z,id=data$id,time=data$time,
+#' sto="BM", delta=0.0001, conditional=TRUE)
+#' csreemt$forest # is the fitted random forest (obtained at the last iteration).
+#' csreemt$random_effects # are the predicted random effects for each individual.
+#' csreemt$omega # are the predicted stochastic processes.
+#' plot(csreemt$Vraisemblance) #evolution of the log-likelihood.
 #'
 REEMtree <- function(X,Y,id,Z,iter=10, time, sto, delta = 0.001, conditional = FALSE){
   q <- dim(Z)[2]
@@ -1277,7 +1315,7 @@ REEMtree <- function(X,Y,id,Z,iter=10, time, sto, delta = 0.001, conditional = F
         } else{
           citdata <- cbind(ystar, as.data.frame(X))
           tree <- ctree(ystar~., citdata)
-          feuilles <- Predict(tree, as.data.frame(X))
+          feuilles <- predict(tree, as.data.frame(X))
         }
         leaf <- unique(feuilles)
         nnodes <- length(leaf)
@@ -1356,7 +1394,7 @@ REEMtree <- function(X,Y,id,Z,iter=10, time, sto, delta = 0.001, conditional = F
     } else {
           citdata <- cbind(ystar, as.data.frame(X))
           tree <- ctree(ystar~., citdata)
-          feuilles <- Predict(tree, as.data.frame(X))
+          feuilles <- predict(tree, as.data.frame(X))
     }
     leaf <- unique(feuilles)
     nnodes <- length(leaf) # predicted values at terminal nodes

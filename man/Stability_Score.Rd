@@ -15,7 +15,9 @@ Stability_Score(
   sto = "BM",
   method = "MERF",
   eta = c(1:ncol(X)),
-  nvars = c(1:ncol(X))
+  nvars = c(1:ncol(X)),
+  cforest = FALSE,
+  conditionalVI = FALSE
 )
 }
 \arguments{
@@ -40,6 +42,10 @@ Stability_Score(
 \item{eta}{[numeric]: The size of the neighborhood for the stability score. Can be a vector, in this case, returns the stability scores corresponding to all the values of the vector.}
 
 \item{nvars}{[numeric]: The number of variables to consider among the most impotant variables. Can be a vector, in this case, the function returns the stability scores corresponding to all the values of the vector.}
+
+\item{cforest}{[logical]: Determines if the random forest algorithm is the one implemented by Breiman (2001) and available in \code{\link[randomForest]{randomForest}}, which is the default \code{FALSE}, or if it is the implemented by Strobl et al. (2007) using conditional inference trees in \code{\link[party]{cforest}}.}
+
+\item{conditionalVI}{[logical]: A logical determining whether unconditional or conditional computation of the importance is performed. Only applicable when \code{cforest==TRUE}.}
 }
 \value{
 A matrix with all the stability scores corresponding to the eta and nvars values. The $i$th row corresponds to the $i$th value of eta while the $i$th column corresponds to the $i$ value of nvars.
