@@ -736,9 +736,11 @@ Moy <- function(id,Btilde,sigmahat,Phi,Y,Z){
 #' @param time [time]: Is the vector of the measurement times associated with the trajectories in \code{Y},\code{Z} and \code{X}.
 #' @param sto [character]: Defines the covariance function of the stochastic process, can be either \code{"none"} for no stochastic process, \code{"BM"} for Brownian motion, \code{OrnUhl} for standard Ornstein-Uhlenbeck process, \code{BBridge} for Brownian Bridge, \code{fbm} for Fractional Brownian motion; can also be a function defined by the user.
 #' @param delta [numeric]: The algorithm stops when the difference in log likelihood between two iterations is smaller than \code{delta}. The default value is set to O.O01
+#' @param conditional [logical]: Determines if the random forest algorithm is the one implemented by Breiman (2001) and available in \code{\link[randomForest]{randomForest}}, which is the default \code{FALSE}, or if it is the implemented by Strobl et al. (2007) using conditional inference trees in \code{\link[party]{cforest}}.
 #'
 #' @import stats
 #' @import randomForest
+#' @import party
 #'
 #' @return A fitted (S)REEMforest model which is a list of the following elements: \itemize{
 #' \item \code{forest:} Random forest obtained at the last iteration.
@@ -751,9 +753,18 @@ Moy <- function(id,Btilde,sigmahat,Phi,Y,Z){
 #' \item \code{sto: } Stochastic process used in the model.
 #' \item \code{Vraisemblance:} Log-likelihood of the different iterations.
 #' \item \code{id: } Vector of the identifiers for the different trajectories.
-#' \item \code{OOB: } OOB error of the fitted random forest at each iteration.
+#' \item \code{OOB: } OOB error of the fitted random forest at each iteration, only when \code{conditional=FALSE}.
 #' }
 #' @export
+#'
+#' @references
+#'
+#' Louis Capitaine, Robin Genuer, and Rodolphe Thiébaut (2020). Random forests for high-dimensional longitudinal data. Statistical Methods in Medical Research, 096228022094608. \doi{10.1177/0962280220946080}
+#'
+#' Leo Breiman (2001). Random Forests. Machine Learning, 45(1), 5–32.
+#'
+#' Carolin Strobl, Anne-Laure Boulesteix, Achim Zeileis and Torsten Hothorn (2007). Bias in Random Forest Variable Importance Measures: Illustrations, Sources and a Solution. BMC Bioinformatics, 8(25).
+#'
 #'
 #' @examples \donttest{
 #' set.seed(123)
@@ -769,7 +780,7 @@ Moy <- function(id,Btilde,sigmahat,Phi,Y,Z){
 #' SREEMF$OOB # OOB error at each iteration.
 #' }
 #'
-REEMforest <- function(X,Y,id,Z,iter=100,mtry,ntree=500, time, sto, delta = 0.001){
+REEMforest <- function(X,Y,id,Z,iter=100,mtry=ceiling(ncol(X)/3),ntree=500, time, sto, delta = 0.001, conditional = FALSE){
   q <- dim(Z)[2]
   nind <- length(unique(id))
   btilde <- matrix(0,nind,q) #### Pour la ligne i, on a les effets aléatoires de l'individu i
@@ -806,23 +817,40 @@ REEMforest <- function(X,Y,id,Z,iter=100,mtry,ntree=500, time, sto, delta = 0.00
           indiv <- which(id==unique(id)[k])
           ystar[indiv] <- Y[indiv]- Z[indiv,, drop=FALSE]%*%btilde[k,]- omega[indiv]
         }
-        forest <- randomForest(as.data.frame(X), ystar,mtry=mtry,ntree=ntree, importance = TRUE, keep.inbag=TRUE)
-        f1 <- predict(forest,X,nodes=TRUE)
-        OOB[i] <- forest$mse[ntree]
-        trees <- attributes(f1)
-        inbag <- forest$inbag
+
+        if(!conditional){
+          forest <- randomForest(as.data.frame(X), ystar,mtry=mtry,ntree=ntree, importance = TRUE, keep.inbag=TRUE)
+          f1 <- predict(forest,X,nodes=TRUE)
+          OOB[i] <- forest$mse[ntree]
+          trees <- attributes(f1)$nodes
+          inbag <- forest$inbag
+        } else if (conditional) {
+          citdata <- cbind(ystar, as.data.frame(X))
+          forest <- cforest(ystar ~ ., data = citdata, controls = cforest_unbiased(mtry = mtry, ntree = ntree))
+          f1 <- predict(forest, OOB = TRUE, type = "response")
+          trees <- as.matrix(as.data.frame(forest@where,
+                                           row.names = row.names(citdata),
+                                           col.names = paste0("V", seq_len(ntree))))
+          inbag <- as.matrix(as.data.frame(forest@weights,
+                                           row.names = row.names(citdata),
+                                           col.names = paste0("V", seq_len(ntree))))
+        }
+
         matrice.pred <- matrix(NA,length(Y),ntree)
 
         for (k in 1:ntree){
-          Phi <- matrix(0,length(Y),length(unique(trees$nodes[,k])))
-          indii <- which(forest$forest$nodestatus[,k]==-1)
-          for (l in 1:dim(Phi)[2]){
-            w <- which(trees$nodes[,k]==indii[l])
-            Phi[w,l] <- 1
-          }
+          Phi <- matrix(0,length(Y),length(unique(trees[,k])))
+
+          stop("Cannot follow under conditional; lack forest$forest$nodestatus")
+          ######################################################################################
+          indii <- which(forest$forest$nodestatus[,k]==-1) #####################################
+          for (l in 1:dim(Phi)[2]){ ############################################################
+            w <- which(trees[,k]==indii[l]) ##############################################
+            Phi[w,l] <- 1 ######################################################################
+          } ####################################################################################
+          ######################################################################################
           oobags <- unique(which(inbag[,k]==0))
           beta <- Moy_fbm(id[-oobags],Btilde,sigmahat,Phi[-oobags,],ystar[-oobags],Z[-oobags,,drop=FALSE],h,time[-oobags], sigma2)
-          forest$forest$nodepred[indii,k] <- beta
           matrice.pred[oobags,k] <- Phi[oobags,]%*%beta
         }
 
@@ -851,12 +879,28 @@ REEMforest <- function(X,Y,id,Z,iter=100,mtry,ntree=500, time, sto, delta = 0.00
         if (i>1) inc <- abs(Vrai[i-1]-Vrai[i])/abs(Vrai[i-1])
         if (inc< delta) {
           print(paste0("stopped after ", i, " iterations."))
-          sortie <- list(forest=forest,random_effects=btilde,var_random_effects=Btilde,sigma=sigmahat, id_btilde=unique(id), sto= sto, vraisemblance = Vrai,id=id, time =time, Hurst=h, OOB =OOB, omega=omega2)
+          if(!conditional){
+            for (k in 1:ntree){
+              indii <- which(forest$forest$nodestatus[,k]==-1)
+              forest$forest$nodepred[indii,k] <- beta
+            }
+            sortie <- list(forest=forest,random_effects=btilde,var_random_effects=Btilde,sigma=sigmahat, id_btilde=unique(id), sto= sto, vraisemblance = Vrai,id=id, time =time, Hurst=h, OOB =OOB, omega=omega2)
+          } else {
+            sortie <- list(forest=forest,beta=beta,random_effects=btilde,var_random_effects=Btilde,sigma=sigmahat, id_btilde=unique(id), sto= sto, vraisemblance = Vrai,id=id, time =time, Hurst=h, omega=omega2)
+          }
           class(sortie) <- "longituRF"
           return(sortie)
         }
       }
-      sortie <- list(forest=forest,random_effects=btilde,var_random_effects=Btilde,sigma=sigmahat, id_btilde=unique(id), sto=sto,omega=omega2, sigma_sto =sigma2, time =time, sto= sto, Hurst =h, Vraisemblance=Vrai, OOB =OOB)
+      if(!conditional){
+        for (k in 1:ntree){
+          indii <- which(forest$forest$nodestatus[,k]==-1)
+          forest$forest$nodepred[indii,k] <- beta
+        }
+        sortie <- list(forest=forest,random_effects=btilde,var_random_effects=Btilde,sigma=sigmahat, id_btilde=unique(id), sto=sto,omega=omega2, sigma_sto =sigma2, time =time, sto= sto, Hurst =h, Vraisemblance=Vrai, OOB =OOB)
+      } else {
+        sortie <- list(forest=forest,beta=beta,random_effects=btilde,var_random_effects=Btilde,sigma=sigmahat, id_btilde=unique(id), sto=sto,omega=omega2, sigma_sto =sigma2, time =time, sto= sto, Hurst =h, Vraisemblance=Vrai)
+      }
       class(sortie ) <- "longituRF"
       return(sortie)
     }
