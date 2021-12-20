@@ -1240,7 +1240,7 @@ MERT <- function(X,Y,id,Z,iter=100,time, sto, delta = 0.001, conditional = FALSE
 #'
 #' @return A fitted (S)REEMtree model which is a list of the following elements: \itemize{
 #' \item \code{forest:} Tree obtained at the last iteration.
-#' \item \code{beta:} predicted response values at the terminal nodes of the tree, only when \code{conditional==TRUE}. 
+#' \item \code{beta:} predicted response values at the terminal nodes of the tree, only when \code{conditional==TRUE}.
 #' \item \code{random_effects :} predictions of random effects for different trajectories.
 #' \item \code{id_btilde:} Identifiers of individuals associated with the predictions \code{random_effects}.
 #' \item \code{var_random_effects: } Estimation of the variance covariance matrix of random effects.
@@ -1311,12 +1311,11 @@ REEMtree <- function(X,Y,id,Z,iter=10, time, sto, delta = 0.001, conditional = F
 
         if(!conditional){
           tree <- rpart(ystar~.,as.data.frame(X))
-          feuilles <- predict(tree,as.data.frame(X))
         } else{
           citdata <- cbind(ystar, as.data.frame(X))
           tree <- ctree(ystar~., citdata)
-          feuilles <- predict(tree, as.data.frame(X))
         }
+        feuilles <- predict(tree, as.data.frame(X))
         leaf <- unique(feuilles)
         nnodes <- length(leaf)
         Phi <- matrix(0,length(Y), nnodes)
@@ -1390,12 +1389,11 @@ REEMtree <- function(X,Y,id,Z,iter=10, time, sto, delta = 0.001, conditional = F
 
     if(!conditional){
 	    tree <- rpart(ystar~.,as.data.frame(X))
-	    feuilles <- predict(tree,as.data.frame(X))
     } else {
-          citdata <- cbind(ystar, as.data.frame(X))
-          tree <- ctree(ystar~., citdata)
-          feuilles <- predict(tree, as.data.frame(X))
+      citdata <- cbind(ystar, as.data.frame(X))
+      tree <- ctree(ystar~., citdata)
     }
+    feuilles <- predict(tree,as.data.frame(X))
     leaf <- unique(feuilles)
     nnodes <- length(leaf) # predicted values at terminal nodes
     Phi <- matrix(0,length(Y), nnodes)
@@ -1411,7 +1409,7 @@ REEMtree <- function(X,Y,id,Z,iter=10, time, sto, delta = 0.001, conditional = F
     for(p in seq_len(nnodes)){
           fhat[which(feuilles==leaf[p])] <- beta[p]
     }
-    
+
     for (k in 1:nind){ ### calcul des effets al?atoires par individu
       indiv <- which(id==unique(id)[k])
       K <- sto_analysis(sto,time[indiv])
