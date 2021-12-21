@@ -100,7 +100,7 @@ MERF <- function(X,Y,id,Z,iter=100,mtry=ceiling(ncol(X)/3),ntree=500, time, sto,
       }
       omega <- matrix(0,nind,length(unique(time)))
       omega2 <- rep(0,length(Y))
-      h <- opti.FBM(X,Y,id,Z,iter, mtry,ntree,time)
+      h <- opti.FBM(X,Y,id,Z,iter, mtry,ntree,time, conditional)
       for (i in 1:iter){
         ystar <- rep(0,length(Y))
         for (k in 1:nind){ #### on retrace les effets al?atoires
@@ -435,16 +435,16 @@ predict.longituRF <- function(object, X,Z,id,time,...){
   if(class(object$forest) == "BinaryTree"){
     f <- predict(object$forest,as.data.frame(X))
     if(exists("beta", object)){
-	    leaf <- unique(f)
-	    nnodes <- length(object$beta)
-	    if(length(leaf) != nnodes){
-		    stop("Distinct predicted values are not in 1:1 correspondence with tree leaves")
-	    }
-	    aux <- f
-	    for(p in seq_len(nnodes)){
-		    f[which(aux == leaf[p])] <- object$beta[p]
-	    }
-	    rm(aux)
+      leaf <- unique(f)
+      nnodes <- length(object$beta)
+      if(length(leaf) != nnodes){
+        stop("Distinct predicted values are not in 1:1 correspondence with tree leaves")
+      }
+      aux <- f
+      for(p in seq_len(nnodes)){
+        f[which(aux == leaf[p])] <- object$beta[p]
+      }
+      rm(aux)
     }
   } else {
     f <- predict(object$forest,as.data.frame(X))
@@ -811,7 +811,7 @@ REEMforest <- function(X,Y,id,Z,iter=100,mtry=ceiling(ncol(X)/3),ntree=500, time
       }
       omega <- matrix(0,nind,length(unique(time)))
       omega2 <- rep(0,length(Y))
-      h <- opti.FBMreem(X,Y,id,Z,iter, mtry,ntree,time)
+      h <- opti.FBMreem(X,Y,id,Z,iter, mtry,ntree,time, conditional)
       for (i in 1:iter){
         ystar <- rep(0,length(Y))
         for (k in 1:nind){ #### on retrace les effets al?atoires
@@ -839,20 +839,19 @@ REEMforest <- function(X,Y,id,Z,iter=100,mtry=ceiling(ncol(X)/3),ntree=500, time
 
         matrice.pred <- matrix(NA,length(Y),ntree)
 
+	beta <- vector(mode = "list", length = ntree)
         for (k in 1:ntree){
-          Phi <- matrix(0,length(Y),length(unique(trees[,k])))
+          indii <- unique(trees[,k])
+          nnodes <- length(indii)
+          Phi <- matrix(0,length(Y), nnodes)
 
-          stop("Cannot follow under conditional; lack forest$forest$nodestatus")
-          ######################################################################################
-          indii <- which(forest$forest$nodestatus[,k]==-1) #####################################
-          for (l in 1:dim(Phi)[2]){ ############################################################
-            w <- which(trees[,k]==indii[l]) ##############################################
-            Phi[w,l] <- 1 ######################################################################
-          } ####################################################################################
-          ######################################################################################
+          for (l in seq_len(nnodes)){
+            w <- which(trees[,k]==indii[l])
+            Phi[w,l] <- 1
+          }
           oobags <- unique(which(inbag[,k]==0))
-          beta <- Moy_fbm(id[-oobags],Btilde,sigmahat,Phi[-oobags,],ystar[-oobags],Z[-oobags,,drop=FALSE],h,time[-oobags], sigma2)
-          matrice.pred[oobags,k] <- Phi[oobags,]%*%beta
+          beta[[k]] <- Moy_fbm(id[-oobags],Btilde,sigmahat,Phi[-oobags,],ystar[-oobags],Z[-oobags,,drop=FALSE],h,time[-oobags], sigma2)
+          matrice.pred[oobags,k] <- Phi[oobags,]%*%beta[[k]]
         }
 
         fhat <- rep(NA,length(Y))
@@ -882,8 +881,8 @@ REEMforest <- function(X,Y,id,Z,iter=100,mtry=ceiling(ncol(X)/3),ntree=500, time
           print(paste0("stopped after ", i, " iterations."))
           if(!conditional){
             for (k in 1:ntree){
-              indii <- which(forest$forest$nodestatus[,k]==-1)
-              forest$forest$nodepred[indii,k] <- beta
+              indii <- unique(trees[,k])
+              forest$forest$nodepred[indii,k] <- beta[[k]]
             }
             sortie <- list(forest=forest,random_effects=btilde,var_random_effects=Btilde,sigma=sigmahat, id_btilde=unique(id), sto= sto, vraisemblance = Vrai,id=id, time =time, Hurst=h, OOB =OOB, omega=omega2)
           } else {
@@ -913,25 +912,39 @@ REEMforest <- function(X,Y,id,Z,iter=100,mtry=ceiling(ncol(X)/3),ntree=500, time
           indiv <- which(id==unique(id)[k])
           ystar[indiv] <- Y[indiv]- Z[indiv,, drop=FALSE]%*%btilde[k,]
         }
+	if(!conditional){
         forest <- randomForest(as.data.frame(X), ystar,mtry=mtry,ntree=ntree, importance = TRUE, keep.inbag=TRUE)
         f1 <- predict(forest,X,nodes=TRUE)
-        trees <- attributes(f1)
+        trees <- attributes(f1)$nodes
         OOB[i] <- forest$mse[ntree]
         inbag <- forest$inbag
+	} else if(conditional){
+          citdata <- cbind(ystar, as.data.frame(X))
+          forest <- cforest(ystar ~ ., data = citdata, controls = cforest_unbiased(mtry = mtry, ntree = ntree))
+          f1 <- predict(forest, OOB = TRUE, type = "response")
+          trees <- as.matrix(as.data.frame(forest@where,
+                                           row.names = row.names(citdata),
+                                           col.names = paste0("V", seq_len(ntree))))
+          inbag <- as.matrix(as.data.frame(forest@weights,
+                                           row.names = row.names(citdata),
+                                           col.names = paste0("V", seq_len(ntree))))
+	}
         matrice.pred <- matrix(NA,length(Y),ntree)
 
 
+	beta <- vector(mode = "list", length = ntree)
         for (k in 1:ntree){
-          Phi <- matrix(0,length(Y),length(unique(trees$nodes[,k])))
-          indii <- which(forest$forest$nodestatus[,k]==-1)
-          for (l in 1:dim(Phi)[2]){
-            w <- which(trees$nodes[,k]==indii[l])
+          indii <- unique(trees[,k])
+	nnodes <- length(indii)
+	Phi <- matrix(0,length(Y),nnodes)
+          for (l in seq_len(nnodes)){
+            w <- which(trees[,k]==indii[l])
             Phi[w,l] <- 1
           }
           oobags <- unique(which(inbag[,k]==0))
-          beta <- Moy(id[-oobags],Btilde,sigmahat,Phi[-oobags,],ystar[-oobags],Z[-oobags,,drop=FALSE])
+          beta[[k]] <- Moy(id[-oobags],Btilde,sigmahat,Phi[-oobags,],ystar[-oobags],Z[-oobags,,drop=FALSE])
           forest$forest$nodepred[indii,k] <- beta
-          matrice.pred[oobags,k] <- Phi[oobags,]%*%beta
+          matrice.pred[oobags,k] <- Phi[oobags,]%*%beta[[k]]
         }
 
         fhat <- rep(NA,length(Y))
@@ -954,7 +967,15 @@ REEMforest <- function(X,Y,id,Z,iter=100,mtry=ceiling(ncol(X)/3),ntree=500, time
         if (i>1) inc <- abs((Vrai[i-1]-Vrai[i])/Vrai[i-1])
         if (inc< delta) {
           print(paste0("stopped after ", i, " iterations."))
+	if(!conditional){
+		for(k in seq_len(ntree)){
+			indii <- unique(trees[,k])
+			forest$forest$nodepred[indii,k] <- beta[[k]]
+		}
           sortie <- list(forest=forest,random_effects=btilde,var_random_effects=Btilde,sigma=sigmahat, id_btilde=unique(id), sto= sto, vraisemblance = Vrai,id=id, time =time, OOB =OOB)
+	} else {
+          sortie <- list(forest=forest,beta=beta,random_effects=btilde,var_random_effects=Btilde,sigma=sigmahat, id_btilde=unique(id), sto= sto, vraisemblance = Vrai,id=id, time =time, OOB =OOB)
+	}
           class(sortie) <- "longituRF"
           return(sortie)
         }
@@ -1412,17 +1433,17 @@ REEMtree <- function(X,Y,id,Z,iter=10, time, sto, delta = 0.001, conditional = F
           return(sortie)
         }
       }
-  if(!conditional){
-            lee <- which(tree$frame[,"var"]=="<leaf>")
-            for (k in 1:nnodes){
-              ou <- which(tree$frame[,"yval"]==leaf[k])
-              w <- intersect(ou,lee)
-              tree$frame[w,"yval"] <- beta[k]
-            }
-      sortie <- list(forest=tree,random_effects=btilde,var_random_effects=Btilde,sigma=sigmahat, id_btilde=unique(id), sto= sto, Vraisemblance=Vrai, time =time, id=id )
-  } else if (conditional){
-      sortie <- list(forest=tree,beta=beta,random_effects=btilde,var_random_effects=Btilde,sigma=sigmahat, id_btilde=unique(id), sto= sto, Vraisemblance=Vrai, time =time, id=id )
-  }
+      if(!conditional){
+        lee <- which(tree$frame[,"var"]=="<leaf>")
+        for (k in 1:nnodes){
+          ou <- which(tree$frame[,"yval"]==leaf[k])
+          w <- intersect(ou,lee)
+          tree$frame[w,"yval"] <- beta[k]
+        }
+        sortie <- list(forest=tree,random_effects=btilde,var_random_effects=Btilde,sigma=sigmahat, id_btilde=unique(id), sto= sto, Vraisemblance=Vrai, time =time, id=id )
+      } else if (conditional){
+        sortie <- list(forest=tree,beta=beta,random_effects=btilde,var_random_effects=Btilde,sigma=sigmahat, id_btilde=unique(id), sto= sto, Vraisemblance=Vrai, time =time, id=id )
+      }
       class(sortie) <- "longituRF"
       return(sortie)
     }
@@ -1435,7 +1456,7 @@ REEMtree <- function(X,Y,id,Z,iter=10, time, sto, delta = 0.001, conditional = F
     }
 
     if(!conditional){
-	    tree <- rpart(ystar~.,as.data.frame(X))
+      tree <- rpart(ystar~.,as.data.frame(X))
     } else {
       citdata <- cbind(ystar, as.data.frame(X))
       tree <- ctree(ystar~., citdata)
@@ -1454,7 +1475,7 @@ REEMtree <- function(X,Y,id,Z,iter=10, time, sto, delta = 0.001, conditional = F
 
     fhat <- feuilles
     for(p in seq_len(nnodes)){
-          fhat[which(feuilles==leaf[p])] <- beta[p]
+      fhat[which(feuilles==leaf[p])] <- beta[p]
     }
 
     for (k in 1:nind){ ### calcul des effets al?atoires par individu
@@ -1475,18 +1496,18 @@ REEMtree <- function(X,Y,id,Z,iter=10, time, sto, delta = 0.001, conditional = F
     if (i>1) inc <- (Vrai[i-1]-Vrai[i])/Vrai[i-1]
     if (inc< delta) {
       print(paste0("stopped after ", i, " iterations."))
-    if(!conditional){
-    lee <- which(tree$frame[,"var"]=="<leaf>")
-    for (k in 1:nnodes){
-      ou <- which(tree$frame[,"yval"]==leaf[k])
-      w <- intersect(ou,lee)
-      tree$frame[w,"yval"] <- beta[k]
-    }
+      if(!conditional){
+        lee <- which(tree$frame[,"var"]=="<leaf>")
+        for (k in 1:nnodes){
+          ou <- which(tree$frame[,"yval"]==leaf[k])
+          w <- intersect(ou,lee)
+          tree$frame[w,"yval"] <- beta[k]
+        }
 
-      sortie <- list(forest=tree,random_effects=btilde,var_random_effects=Btilde,sigma=sigmahat, id_btilde=unique(id), id_omega=id_omega, omega=omega, sigma_sto =sigma2, time = time, sto= sto,Vraisemblance=Vrai,id=id)
-    } else if(conditional){
-      sortie <- list(forest=tree,beta=beta,random_effects=btilde,var_random_effects=Btilde,sigma=sigmahat, id_btilde=unique(id), id_omega=id_omega, omega=omega, sigma_sto =sigma2, time = time, sto= sto,Vraisemblance=Vrai,id=id)
-    }
+        sortie <- list(forest=tree,random_effects=btilde,var_random_effects=Btilde,sigma=sigmahat, id_btilde=unique(id), id_omega=id_omega, omega=omega, sigma_sto =sigma2, time = time, sto= sto,Vraisemblance=Vrai,id=id)
+      } else if(conditional){
+        sortie <- list(forest=tree,beta=beta,random_effects=btilde,var_random_effects=Btilde,sigma=sigmahat, id_btilde=unique(id), id_omega=id_omega, omega=omega, sigma_sto =sigma2, time = time, sto= sto,Vraisemblance=Vrai,id=id)
+      }
       class(sortie) <- "longituRF"
       return(sortie)
     }
@@ -1498,9 +1519,9 @@ REEMtree <- function(X,Y,id,Z,iter=10, time, sto, delta = 0.001, conditional = F
       w <- intersect(ou,lee)
       tree$frame[w,"yval"] <- beta[k]
     }
-  sortie <- list(forest=tree,random_effects=btilde,var_random_effects=Btilde,sigma=sigmahat, id_btilde=unique(id), id_omega=id_omega,omega=omega, sigma_sto =sigma2, time = time, sto= sto, Vraisemblance=Vrai, id=id)
+    sortie <- list(forest=tree,random_effects=btilde,var_random_effects=Btilde,sigma=sigmahat, id_btilde=unique(id), id_omega=id_omega,omega=omega, sigma_sto =sigma2, time = time, sto= sto, Vraisemblance=Vrai, id=id)
   } else if (conditional) {
-  sortie <- list(forest=tree,beta=beta,random_effects=btilde,var_random_effects=Btilde,sigma=sigmahat, id_btilde=unique(id), id_omega=id_omega,omega=omega, sigma_sto =sigma2, time = time, sto= sto, Vraisemblance=Vrai, id=id)
+    sortie <- list(forest=tree,beta=beta,random_effects=btilde,var_random_effects=Btilde,sigma=sigmahat, id_btilde=unique(id), id_omega=id_omega,omega=omega, sigma_sto =sigma2, time = time, sto= sto, Vraisemblance=Vrai, id=id)
   }
   class(sortie) <- "longituRF"
   return(sortie)
@@ -1582,11 +1603,12 @@ cov.fbm <- function(time,H){
 #' @param mtry [numeric]
 #' @param ntree [numeric]
 #' @param time [time]
+#' @param conditional [logical]
 #'
 #' @import stats
 #'
 #' @keywords internal
-opti.FBM <- function(X,Y,id,Z,iter,mtry,ntree,time){
+opti.FBM <- function(X,Y,id,Z,iter,mtry,ntree,time,conditional){
   print("Do you want to enter an ensemble for the Hurst parameter ? (1/0)")
   resp <- scan(nmax=1)
   if (resp ==1){
@@ -1622,11 +1644,17 @@ opti.FBM <- function(X,Y,id,Z,iter,mtry,ntree,time){
       ystar <- rep(0,length(Y))
       for (k in 1:nind){ #### on retrace les effets al?atoires
         indiv <- which(id==unique(id)[k])
-        ystar[indiv] <- Y[indiv]- Z[indiv,]%*%btilde[k,]- omega[k,which(id_omega[k,]==1)]
+        ystar[indiv] <- Y[indiv]- Z[indiv,, drop=FALSE]%*%btilde[k,]- omega[k,which(id_omega[k,]==1)]
       }
 
-      forest <- randomForest(as.data.frame(X),ystar,mtry=mtry,ntree=ntree) ### on construit l'arbre
-      fhat <- predict(forest, as.data.frame(X)) #### pr?diction avec l'arbre
+      if(!conditional){
+        forest <- randomForest(as.data.frame(X),ystar,mtry=mtry,ntree=ntree) ### on construit l'arbre
+        fhat <- predict(forest, as.data.frame(X)) #### pr?diction avec l'arbre
+      } else if(conditional){
+        citdata <- cbind(ystar, as.data.frame(X))
+        forest <- cforest(ystar ~ ., data = citdata, controls = cforest_unbiased(mtry = mtry, ntree = ntree))
+        fhat <- predict(forest, OOB = TRUE, type = "response") #### pr?diction avec l'arbre
+      }
       for (k in 1:nind){ ### calcul des effets al?atoires par individu
         indiv <- which(id==unique(id)[k])
         K <- cov.fbm(time[indiv], h)
@@ -1942,11 +1970,12 @@ opti.exp <- function(X,Y,id,Z,iter,mtry,ntree,time){
 #' @param mtry [numeric]
 #' @param ntree [numeric]
 #' @param time [time]
+#' @param conditional [logical]
 #'
 #' @import stats
 #'
 #' @keywords internal
-opti.FBMreem <- function(X,Y,id,Z,iter,mtry,ntree,time){
+opti.FBMreem <- function(X,Y,id,Z,iter,mtry,ntree,time,conditional){
   print("Do you want to enter a set for the Hurst parameter ? (1/0)")
   resp <- scan(nmax=1)
   if (resp ==1){
@@ -1982,43 +2011,63 @@ opti.FBMreem <- function(X,Y,id,Z,iter,mtry,ntree,time){
       ystar <- rep(0,length(Y))
       for (k in 1:nind){ #### on retrace les effets al?atoires
         indiv <- which(id==unique(id)[k])
-        ystar[indiv] <- Y[indiv]- Z[indiv,]%*%btilde[k,]- omega[k,which(id_omega[k,]==1)]
+        ystar[indiv] <- Y[indiv]- Z[indiv,,drop=FALSE]%*%btilde[k,]- omega[k,which(id_omega[k,]==1)]
       }
-      forest <- randomForest(as.data.frame(X), ystar,mtry=mtry,ntree=ntree)
-      f1 <- predict(forest, as.data.frame(X), nodes=TRUE)
-      trees <- attributes(f1)
+      if(!conditional){
+        forest <- randomForest(as.data.frame(X), ystar,mtry=mtry,ntree=ntree, keep.inbag=TRUE)
+        f1 <- predict(forest, as.data.frame(X), nodes=TRUE)
+        trees <- attributes(f1)$nodes
+        inbag <- forest$inbag
+      } else if (conditional){
+        citdata <- cbind(ystar, as.data.frame(X))
+        forest <- cforest(ystar ~ ., data = citdata, controls = cforest_unbiased(mtry = mtry, ntree = ntree))
+        f1 <- predict(forest, OOB = TRUE, type = "response")
+        trees <- as.matrix(as.data.frame(forest@where,
+                                         row.names = row.names(citdata),
+                                         col.names = paste0("V", seq_len(ntree))))
+        inbag <- as.matrix(as.data.frame(forest@weights,
+                                         row.names = row.names(citdata),
+                                         col.names = paste0("V", seq_len(ntree))))
+      }
       K <- ntree
 
+      matrice.pred <- matrix(NA,length(Y),ntree)
       for (k in 1:K){
-        Phi <- matrix(0,length(Y),length(unique(trees$nodes[,k])))
-        indii <- which(forest$forest$nodestatus[,k]==-1)
-        for (l in 1:dim(Phi)[2]){
-          w <- which(trees$nodes[,k]==indii[l])
+        indii <- unique(trees[,k])
+        nnodes <- length(indii)
+        Phi <- matrix(0,length(Y),nnodes)
+        for (l in seq_len(nnodes)){
+          w <- which(trees[,k]==indii[l])
           Phi[w,l] <- 1
         }
-        beta <- Moy_fbm(id,Btilde,sigmahat,Phi,Y,Z, h ,time, sigma2)
-        forest$forest$nodepred[indii,k] <- beta
+        oobags <- unique(which(inbag[,k]==0))
+        beta <- Moy_fbm(id[-oobags],Btilde,sigmahat,Phi[-oobags,],ystar[-oobags],Z[-oobags,,drop=FALSE], h ,time[-oobags], sigma2)
+        matrice.pred[oobags,k] <- Phi[oobags,]%*%beta
       }
 
-      fhat <- predict(forest,as.data.frame(X))
+      fhat <- rep(NA,length(Y))
+      for (k in 1:length(Y)){
+        w <- which(is.na(matrice.pred[k,])==TRUE)
+        fhat[k] <- mean(matrice.pred[k,-w])
+      }
 
       for (k in 1:nind){ ### calcul des effets al?atoires par individu
         indiv <- which(id==unique(id)[k])
         K <- cov.fbm(time[indiv],h)
-        V <- Z[indiv,]%*%Btilde%*%t(Z[indiv,])+diag(rep(sigmahat,length(Y[indiv])))+ sigma2*K
+        V <- Z[indiv,,drop=FALSE]%*%Btilde%*%t(Z[indiv,,drop=FALSE])+diag(rep(sigmahat,length(Y[indiv])))+ sigma2*K
         btilde[k,] <- Btilde%*%t(Z[indiv,])%*%solve(V)%*%(Y[indiv]-fhat[indiv])
       }
       #### pr?diction du processus stochastique:
       for (k in 1:length(id_btilde)){
         indiv <- which(id==unique(id)[k])
         K <- cov.fbm(time[indiv], h)
-        V <- Z[indiv,]%*%Btilde%*%t(Z[indiv,])+diag(rep(sigmahat,length(Y[indiv])))+sigma2*K
+        V <- Z[indiv,,drop=FALSE]%*%Btilde%*%t(Z[indiv,,drop=FALSE])+diag(rep(sigmahat,length(Y[indiv])))+sigma2*K
         omega[k,which(id_omega[k,]==1)] <- sigma2*K%*%solve(V)%*%(Y[indiv]-fhat[indiv])
       }
 
       for (k in 1:nind){
         indiv <- which(id==unique(id)[k])
-        epsilonhat[indiv] <- Y[indiv] -fhat[indiv] -Z[indiv,]%*%btilde[k,]- omega[k,which(id_omega[k,]==1)]
+        epsilonhat[indiv] <- Y[indiv] -fhat[indiv] -Z[indiv,,drop=FALSE]%*%btilde[k,]- omega[k,which(id_omega[k,]==1)]
       }
       sigm <- sigmahat
       B <- Btilde
