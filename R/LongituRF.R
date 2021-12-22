@@ -825,6 +825,7 @@ REEMforest <- function(X,Y,id,Z,iter=100,mtry=ceiling(ncol(X)/3),ntree=500, time
 				if(!conditional){
 					forest <- randomForest(as.data.frame(X), ystar,mtry=mtry,ntree=ntree, importance = TRUE, keep.inbag=TRUE)
 					f1 <- predict(forest,X,nodes=TRUE)
+					# f1 == apply(predict(forest, X, predict.all = TRUE)$individual, 1, mean)
 					trees <- attr(f1, "nodes")
 					inbag <- forest$inbag
 					OOB[i] <- forest$mse[ntree]
@@ -832,6 +833,9 @@ REEMforest <- function(X,Y,id,Z,iter=100,mtry=ceiling(ncol(X)/3),ntree=500, time
 					citdata <- cbind(ystar, as.data.frame(X))
 					forest <- cforest(ystar ~ ., data = citdata, controls = cforest_unbiased(mtry = mtry, ntree = ntree))
 					f1 <- predict(forest, OOB = TRUE, type = "response")
+					# ?cforest:
+					# The aggregation scheme works by averaging observation weights extracted from each of the ntree trees and NOT by averaging predictions directly as in randomForest.
+					# See Hothorn et al. (2004) for a description.
 					trees <- as.matrix(as.data.frame(forest@where,
 									 row.names = row.names(citdata),
 									 col.names = paste0("V", seq_len(ntree))))
