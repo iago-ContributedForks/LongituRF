@@ -795,6 +795,10 @@ REEMforest <- function(X,Y,id,Z,iter=100,mtry=ceiling(ncol(X)/3),ntree=500, time
 	inc <- 1
 	OOB <- NULL
 
+	if(!is.logical(conditional) || length(conditional) != 1 || is.na(conditional)){
+		conditional <- FALSE
+	}
+
 	if (class(sto)=="character"){
 		if (sto=="fbm"){
 
@@ -904,10 +908,10 @@ REEMforest <- function(X,Y,id,Z,iter=100,mtry=ceiling(ncol(X)/3),ntree=500, time
 			return(sortie)
 		}
 
-		if ( sto=="none"){
-			for (i in 1:iter){
+		if (sto=="none"){
+			for(i in 1:iter){
 				ystar <- rep(0,length(Y))
-				for (k in 1:nind){ #### on retrace les effets al?atoires
+				for(k in 1:nind){ #### on retrace les effets al?atoires
 					indiv <- which(id==unique(id)[k])
 					ystar[indiv] <- Y[indiv]- Z[indiv,, drop=FALSE]%*%btilde[k,]
 				}
@@ -917,7 +921,7 @@ REEMforest <- function(X,Y,id,Z,iter=100,mtry=ceiling(ncol(X)/3),ntree=500, time
 					trees <- attributes(f1)$nodes
 					inbag <- forest$inbag
 					OOB[i] <- forest$mse[ntree]
-				} else if(conditional){
+				}else if(conditional){
 					citdata <- cbind(ystar, as.data.frame(X))
 					forest <- cforest(ystar ~ ., data = citdata, controls = cforest_unbiased(mtry = mtry, ntree = ntree))
 					f1 <- predict(forest, OOB = TRUE, type = "response")
@@ -932,11 +936,11 @@ REEMforest <- function(X,Y,id,Z,iter=100,mtry=ceiling(ncol(X)/3),ntree=500, time
 
 
 				beta <- vector(mode = "list", length = ntree)
-				for (k in 1:ntree){
+				for(k in 1:ntree){
 					indii <- unique(trees[,k])
 					nnodes <- length(indii)
 					Phi <- matrix(0,length(Y),nnodes)
-					for (l in seq_len(nnodes)){
+					for(l in seq_len(nnodes)){
 						w <- which(trees[,k]==indii[l])
 						Phi[w,l] <- 1
 					}
@@ -946,12 +950,12 @@ REEMforest <- function(X,Y,id,Z,iter=100,mtry=ceiling(ncol(X)/3),ntree=500, time
 				}
 
 				fhat <- rep(NA,length(Y))
-				for (k in 1:length(Y)){
+				for(k in 1:length(Y)){
 					w <- which(is.na(matrice.pred[k,]))
 					fhat[k] <- mean(matrice.pred[k,-w])
 				}
 
-				for (k in 1:nind){ ### calcul des effets al?atoires par individu
+				for(k in 1:nind){ ### calcul des effets al?atoires par individu
 					indiv <- which(id==unique(id)[k])
 					V <- Z[indiv,, drop=FALSE] %*% Btilde %*% t(Z[indiv,, drop=FALSE]) + diag(as.numeric(sigmahat),length(indiv),length(indiv))
 					btilde[k,] <- Btilde %*% t(Z[indiv,, drop=FALSE]) %*% solve(V) %*% (Y[indiv] - fhat[indiv])
@@ -962,8 +966,8 @@ REEMforest <- function(X,Y,id,Z,iter=100,mtry=ceiling(ncol(X)/3),ntree=500, time
 				sigmahat <- sig(sigmahat,id, Z, epsilonhat, Btilde) ##### MAJ de la variance des erreurs ! ici que doit se trouver le probl?me !
 				Btilde  <- bay(btilde,Btilde,Z,id,sigm) #### MAJ des param?tres de la variance des effets al?atoires.
 				Vrai <- c(Vrai, logV(Y,fhat,Z,time,id,Btilde,0,sigmahat,sto))
-				if (i>1) inc <- abs((Vrai[i-1]-Vrai[i])/Vrai[i-1])
-				if (inc< delta) {
+				if(i > 1) inc <- abs((Vrai[i-1]-Vrai[i])/Vrai[i-1])
+				if(inc < delta) {
 					print(paste0("stopped after ", i, " iterations."))
 					if(!conditional){
 						for(k in seq_len(ntree)){
@@ -971,20 +975,20 @@ REEMforest <- function(X,Y,id,Z,iter=100,mtry=ceiling(ncol(X)/3),ntree=500, time
 							forest$forest$nodepred[indii,k] <- beta[[k]]
 						}
 						sortie <- list(forest=forest,random_effects=btilde,var_random_effects=Btilde,sigma=sigmahat, id_btilde=unique(id), sto= sto, vraisemblance = Vrai,id=id, time =time, OOB =OOB)
-					} else {
+					}else{
 						sortie <- list(forest=forest,beta=beta,random_effects=btilde,var_random_effects=Btilde,sigma=sigmahat, id_btilde=unique(id), sto= sto, vraisemblance = Vrai,id=id, time =time, OOB =OOB)
 					}
 					class(sortie) <- "longituRF"
 					return(sortie)
 				}
 			}
-			if(!conditional) {
+			if(!conditional){
 				for(k in seq_len(ntree)){
 					indii <- unique(trees[,k])
 					forest$forest$nodepred[indii,k] <- beta[[k]]
 				}
 				sortie <- list(forest=forest,random_effects=btilde,var_random_effects=Btilde,sigma=sigmahat, id_btilde=unique(id), sto= sto, id = id , time = time , Vraisemblance=Vrai, OOB =OOB)
-			} else {
+			}else{
 				sortie <- list(forest=forest,beta=beta,random_effects=btilde,var_random_effects=Btilde,sigma=sigmahat, id_btilde=unique(id), sto= sto, id = id , time = time , Vraisemblance=Vrai, OOB =OOB)
 			}
 			class(sortie) <- "longituRF"
@@ -1180,6 +1184,10 @@ MERT <- function(X,Y,id,Z,iter=100,time, sto, delta = 0.001, conditional = FALSE
 	Vrai <- NULL
 	id_omega=sto
 
+	if(!is.logical(conditional) || length(conditional) != 1 || is.na(conditional)){
+		conditional <- FALSE
+	}
+
 	if (class(sto)=="character"){
 		if ( sto=="none"){
 			for (i in 1:iter){
@@ -1373,6 +1381,10 @@ REEMtree <- function(X,Y,id,Z,iter=10, time, sto, delta = 0.001, conditional = F
 	Vrai <- NULL
 	inc <- 1
 	id_omega=sto
+
+	if(!is.logical(conditional) || length(conditional) != 1 || is.na(conditional)){
+		conditional <- FALSE
+	}
 
 	if (class(sto)=="character"){
 		if ( sto=="none"){
@@ -2290,6 +2302,13 @@ DataLongGenerator <- function(n=50,p=6,G=6){
 #' @return A matrix with all the stability scores corresponding to the eta and nvars values. The $i$th row corresponds to the $i$th value of eta while the $i$th column corresponds to the $i$ value of nvars.
 #
 Stability_Score <- function(X,Y,Z,id,time,mtry,ntree, sto="BM",method="MERF", eta = c(1:ncol(X)),nvars=c(1:ncol(X)), cforest = FALSE, conditionalVI = FALSE){
+
+	if(!is.logical(cforest) || length(cforest) != 1 || is.na(cforest)){
+		cforest <- FALSE
+	}
+	if(!is.logical(conditionalVI) || length(conditionalVI) != 1 || is.na(conditionalVI)){
+		conditionalVI <- FALSE
+	}
 
 	if (method=="REEMforest"){
 		sortie1 <- REEMforest(X=X,Y=Y,Z=Z,id=id,time=time,mtry=mtry,ntree=ntree,sto=sto)
