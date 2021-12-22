@@ -822,9 +822,9 @@ REEMforest <- function(X,Y,id,Z,iter=100,mtry=ceiling(ncol(X)/3),ntree=500, time
         if(!conditional){
           forest <- randomForest(as.data.frame(X), ystar,mtry=mtry,ntree=ntree, importance = TRUE, keep.inbag=TRUE)
           f1 <- predict(forest,X,nodes=TRUE)
-          OOB[i] <- forest$mse[ntree]
           trees <- attributes(f1)$nodes
           inbag <- forest$inbag
+          OOB[i] <- forest$mse[ntree]
         } else if (conditional) {
           citdata <- cbind(ystar, as.data.frame(X))
           forest <- cforest(ystar ~ ., data = citdata, controls = cforest_unbiased(mtry = mtry, ntree = ntree))
@@ -856,18 +856,18 @@ REEMforest <- function(X,Y,id,Z,iter=100,mtry=ceiling(ncol(X)/3),ntree=500, time
 
         fhat <- rep(NA,length(Y))
         for (k in 1:length(Y)){
-          w <- which(is.na(matrice.pred[k,])==TRUE)
+          w <- which(is.na(matrice.pred[k,]))
           fhat[k] <- mean(matrice.pred[k,-w])
         }
 
         for (k in 1:nind){ ### calcul des effets al?atoires par individu
           indiv <- which(id==unique(id)[k])
           K <- cov.fbm(time[indiv],h)
-          V <- Z[indiv,, drop=FALSE]%*%Btilde%*%t(Z[indiv,, drop=FALSE])+diag(as.numeric(sigmahat),length(indiv),length(indiv))+ sigma2*K
-          btilde[k,] <- Btilde%*%t(Z[indiv,, drop=FALSE])%*%solve(V)%*%(Y[indiv]-fhat[indiv])
-          omega[k,which(id_omega[k,]==1)] <- sigma2*K%*%solve(V)%*%(Y[indiv]-fhat[indiv])
+          V <- Z[indiv,, drop=FALSE] %*% Btilde %*% t(Z[indiv,, drop=FALSE]) + diag(as.numeric(sigmahat),length(indiv),length(indiv)) + sigma2 * K
+          btilde[k,] <- Btilde %*% t(Z[indiv,, drop=FALSE]) %*% solve(V) %*% (Y[indiv] - fhat[indiv])
+          omega[k,which(id_omega[k,]==1)] <- sigma2 * K %*% solve(V) %*% (Y[indiv] - fhat[indiv])
           omega2[indiv] <- omega[k,which(id_omega[k,]==1)]
-          epsilonhat[indiv] <- Y[indiv] -fhat[indiv] -Z[indiv,, drop=FALSE]%*%btilde[k,]- omega[indiv]
+          epsilonhat[indiv] <- Y[indiv] - fhat[indiv] - Z[indiv,, drop=FALSE] %*% btilde[k,] - omega[indiv]
         }
         sigm <- sigmahat
         B <- Btilde
@@ -894,8 +894,8 @@ REEMforest <- function(X,Y,id,Z,iter=100,mtry=ceiling(ncol(X)/3),ntree=500, time
       }
       if(!conditional){
         for (k in 1:ntree){
-          indii <- which(forest$forest$nodestatus[,k]==-1)
-          forest$forest$nodepred[indii,k] <- beta
+          indii <- unique(trees[,k])
+          forest$forest$nodepred[indii,k] <- beta[[k]]
         }
         sortie <- list(forest=forest,random_effects=btilde,var_random_effects=Btilde,sigma=sigmahat, id_btilde=unique(id), sto=sto,omega=omega2, sigma_sto =sigma2, time =time, sto= sto, Hurst =h, Vraisemblance=Vrai, OOB =OOB)
       } else {
@@ -916,8 +916,8 @@ REEMforest <- function(X,Y,id,Z,iter=100,mtry=ceiling(ncol(X)/3),ntree=500, time
           forest <- randomForest(as.data.frame(X), ystar,mtry=mtry,ntree=ntree, importance = TRUE, keep.inbag=TRUE)
           f1 <- predict(forest,X,nodes=TRUE)
           trees <- attributes(f1)$nodes
-          OOB[i] <- forest$mse[ntree]
           inbag <- forest$inbag
+          OOB[i] <- forest$mse[ntree]
         } else if(conditional){
           citdata <- cbind(ystar, as.data.frame(X))
           forest <- cforest(ystar ~ ., data = citdata, controls = cforest_unbiased(mtry = mtry, ntree = ntree))
@@ -943,21 +943,20 @@ REEMforest <- function(X,Y,id,Z,iter=100,mtry=ceiling(ncol(X)/3),ntree=500, time
           }
           oobags <- unique(which(inbag[,k]==0))
           beta[[k]] <- Moy(id[-oobags],Btilde,sigmahat,Phi[-oobags,],ystar[-oobags],Z[-oobags,,drop=FALSE])
-          forest$forest$nodepred[indii,k] <- beta
           matrice.pred[oobags,k] <- Phi[oobags,]%*%beta[[k]]
         }
 
         fhat <- rep(NA,length(Y))
         for (k in 1:length(Y)){
-          w <- which(is.na(matrice.pred[k,])==TRUE)
+          w <- which(is.na(matrice.pred[k,]))
           fhat[k] <- mean(matrice.pred[k,-w])
         }
 
         for (k in 1:nind){ ### calcul des effets al?atoires par individu
           indiv <- which(id==unique(id)[k])
-          V <- Z[indiv,, drop=FALSE]%*%Btilde%*%t(Z[indiv,, drop=FALSE])+diag(as.numeric(sigmahat),length(indiv),length(indiv))
-          btilde[k,] <- Btilde%*%t(Z[indiv,, drop=FALSE])%*%solve(V)%*%(Y[indiv]-fhat[indiv])
-          epsilonhat[indiv] <- Y[indiv] -fhat[indiv] -Z[indiv,, drop=FALSE]%*%btilde[k,]
+          V <- Z[indiv,, drop=FALSE] %*% Btilde %*% t(Z[indiv,, drop=FALSE]) + diag(as.numeric(sigmahat),length(indiv),length(indiv))
+          btilde[k,] <- Btilde %*% t(Z[indiv,, drop=FALSE]) %*% solve(V) %*% (Y[indiv] - fhat[indiv])
+          epsilonhat[indiv] <- Y[indiv] - fhat[indiv] - Z[indiv,, drop=FALSE] %*% btilde[k,]
         }
 
         sigm <- sigmahat
@@ -980,7 +979,15 @@ REEMforest <- function(X,Y,id,Z,iter=100,mtry=ceiling(ncol(X)/3),ntree=500, time
           return(sortie)
         }
       }
+    if(!conditional) {
+	    for(k in seq_len(ntree)){
+		    indii <- unique(trees[,k])
+		    forest$forest$nodepred[indii,k] <- beta[[k]]
+	    }
       sortie <- list(forest=forest,random_effects=btilde,var_random_effects=Btilde,sigma=sigmahat, id_btilde=unique(id), sto= sto, id = id , time = time , Vraisemblance=Vrai, OOB =OOB)
+    } else {
+      sortie <- list(forest=forest,beta=beta,random_effects=btilde,var_random_effects=Btilde,sigma=sigmahat, id_btilde=unique(id), sto= sto, id = id , time = time , Vraisemblance=Vrai, OOB =OOB)
+    }
       class(sortie) <- "longituRF"
       return(sortie)
     }
