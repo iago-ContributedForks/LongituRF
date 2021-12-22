@@ -839,7 +839,7 @@ REEMforest <- function(X,Y,id,Z,iter=100,mtry=ceiling(ncol(X)/3),ntree=500, time
 
         matrice.pred <- matrix(NA,length(Y),ntree)
 
-	beta <- vector(mode = "list", length = ntree)
+        beta <- vector(mode = "list", length = ntree)
         for (k in 1:ntree){
           indii <- unique(trees[,k])
           nnodes <- length(indii)
@@ -912,13 +912,13 @@ REEMforest <- function(X,Y,id,Z,iter=100,mtry=ceiling(ncol(X)/3),ntree=500, time
           indiv <- which(id==unique(id)[k])
           ystar[indiv] <- Y[indiv]- Z[indiv,, drop=FALSE]%*%btilde[k,]
         }
-	if(!conditional){
-        forest <- randomForest(as.data.frame(X), ystar,mtry=mtry,ntree=ntree, importance = TRUE, keep.inbag=TRUE)
-        f1 <- predict(forest,X,nodes=TRUE)
-        trees <- attributes(f1)$nodes
-        OOB[i] <- forest$mse[ntree]
-        inbag <- forest$inbag
-	} else if(conditional){
+        if(!conditional){
+          forest <- randomForest(as.data.frame(X), ystar,mtry=mtry,ntree=ntree, importance = TRUE, keep.inbag=TRUE)
+          f1 <- predict(forest,X,nodes=TRUE)
+          trees <- attributes(f1)$nodes
+          OOB[i] <- forest$mse[ntree]
+          inbag <- forest$inbag
+        } else if(conditional){
           citdata <- cbind(ystar, as.data.frame(X))
           forest <- cforest(ystar ~ ., data = citdata, controls = cforest_unbiased(mtry = mtry, ntree = ntree))
           f1 <- predict(forest, OOB = TRUE, type = "response")
@@ -928,15 +928,15 @@ REEMforest <- function(X,Y,id,Z,iter=100,mtry=ceiling(ncol(X)/3),ntree=500, time
           inbag <- as.matrix(as.data.frame(forest@weights,
                                            row.names = row.names(citdata),
                                            col.names = paste0("V", seq_len(ntree))))
-	}
+        }
         matrice.pred <- matrix(NA,length(Y),ntree)
 
 
-	beta <- vector(mode = "list", length = ntree)
+        beta <- vector(mode = "list", length = ntree)
         for (k in 1:ntree){
           indii <- unique(trees[,k])
-	nnodes <- length(indii)
-	Phi <- matrix(0,length(Y),nnodes)
+          nnodes <- length(indii)
+          Phi <- matrix(0,length(Y),nnodes)
           for (l in seq_len(nnodes)){
             w <- which(trees[,k]==indii[l])
             Phi[w,l] <- 1
@@ -967,15 +967,15 @@ REEMforest <- function(X,Y,id,Z,iter=100,mtry=ceiling(ncol(X)/3),ntree=500, time
         if (i>1) inc <- abs((Vrai[i-1]-Vrai[i])/Vrai[i-1])
         if (inc< delta) {
           print(paste0("stopped after ", i, " iterations."))
-	if(!conditional){
-		for(k in seq_len(ntree)){
-			indii <- unique(trees[,k])
-			forest$forest$nodepred[indii,k] <- beta[[k]]
-		}
-          sortie <- list(forest=forest,random_effects=btilde,var_random_effects=Btilde,sigma=sigmahat, id_btilde=unique(id), sto= sto, vraisemblance = Vrai,id=id, time =time, OOB =OOB)
-	} else {
-          sortie <- list(forest=forest,beta=beta,random_effects=btilde,var_random_effects=Btilde,sigma=sigmahat, id_btilde=unique(id), sto= sto, vraisemblance = Vrai,id=id, time =time, OOB =OOB)
-	}
+          if(!conditional){
+            for(k in seq_len(ntree)){
+              indii <- unique(trees[,k])
+              forest$forest$nodepred[indii,k] <- beta[[k]]
+            }
+            sortie <- list(forest=forest,random_effects=btilde,var_random_effects=Btilde,sigma=sigmahat, id_btilde=unique(id), sto= sto, vraisemblance = Vrai,id=id, time =time, OOB =OOB)
+          } else {
+            sortie <- list(forest=forest,beta=beta,random_effects=btilde,var_random_effects=Btilde,sigma=sigmahat, id_btilde=unique(id), sto= sto, vraisemblance = Vrai,id=id, time =time, OOB =OOB)
+          }
           class(sortie) <- "longituRF"
           return(sortie)
         }
