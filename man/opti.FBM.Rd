@@ -4,7 +4,7 @@
 \alias{opti.FBM}
 \title{Title}
 \usage{
-opti.FBM(X, Y, id, Z, iter, mtry, ntree, time)
+opti.FBM(X, Y, id, Z, iter, mtry, ntree, time, conditional)
 }
 \arguments{
 \item{X}{[matrix]}
@@ -22,6 +22,8 @@ opti.FBM(X, Y, id, Z, iter, mtry, ntree, time)
 \item{ntree}{[numeric]}
 
 \item{time}{[time]}
+
+\item{conditional}{[logical]}
 }
 \description{
 Title

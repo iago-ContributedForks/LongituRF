@@ -9,6 +9,5 @@ Description: Random forests are a statistical learning method widely used in man
 License: GPL-2
 Imports: stats, randomForest, rpart, party, mvtnorm, latex2exp
 Encoding: UTF-8
-LazyData: true
 RoxygenNote: 7.1.2
 Suggests: testthat

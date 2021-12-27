@@ -1,5 +1,6 @@
 #' (S)MERF algorithm
 #'
+#'
 #' (S)MERF is an adaptation of the random forest regression method to longitudinal data introduced by Hajjem et. al. (2014) <doi:10.1080/00949655.2012.741599>.
 #' The model has been improved by Capitaine et. al. (2020) <doi:10.1177/0962280220946080> with the addition of a stochastic process.
 #' The algorithm will estimate the parameters of the following semi-parametric stochastic mixed-effects model: \deqn{Y_i(t)=f(X_i(t))+Z_i(t)\beta_i + \omega_i(t)+\epsilon_i}
@@ -22,6 +23,7 @@
 #' @import randomForest
 #' @import party
 #' @import stats
+#'
 #' @return A fitted (S)MERF model which is a list of the following elements: \itemize{
 #' \item \code{forest:} Random forest obtained at the last iteration.
 #' \item \code{random_effects :} predictions of random effects for different trajectories.
@@ -778,6 +780,11 @@ Moy <- function(id,Btilde,sigmahat,Phi,Y,Z){
 #' SREEMF$omega # are the predicted stochastic processes.
 #' plot(SREEMF$Vraisemblance) #evolution of the log-likelihood.
 #' SREEMF$OOB # OOB error at each iteration.
+#' cSREEMF <- REEMforest(X=data$X,Y=data$Y,Z=data$Z,id=data$id,time=data$time,mtry=2,ntree=500,sto="BM",conditional=TRUE)
+#' cSREEMF$forest # is the fitted random forest (obtained at the last iteration).
+#' cSREEMF$random_effects # are the predicted random effects for each individual.
+#' cSREEMF$omega # are the predicted stochastic processes.
+#' plot(cSREEMF$Vraisemblance) #evolution of the log-likelihood.
 #' }
 #'
 REEMforest <- function(X,Y,id,Z,iter=100,mtry=ceiling(ncol(X)/3),ntree=500, time, sto, delta = 0.001, conditional = FALSE){
@@ -1032,12 +1039,12 @@ REEMforest <- function(X,Y,id,Z,iter=100,mtry=ceiling(ncol(X)/3),ntree=500, time
 			nnodes <- length(indii)
 			Phi <- matrix(0,length(Y), nnodes)
 			for(l in seq_len(nnodes)){
-				w <- which(trees$nodes[,k]==indii[l])
+				w <- which(trees[,k]==indii[l])
 				Phi[w,l] <- 1
 			}
 			oobags <- unique(which(inbag[,k]==0))
 			beta[[k]] <- Moy_sto(id[-oobags],Btilde,sigmahat,Phi[-oobags,, drop=FALSE],ystar[-oobags],Z[-oobags,,drop=FALSE], sto, time[-oobags], sigma2)
-			matrice.pred[oobags,k] <- Phi[oobags,]%*%beta
+			matrice.pred[oobags,k] <- Phi[oobags,]%*%beta[[k]]
 		}
 
 		fhat <- rep(NA,length(Y))
