@@ -434,7 +434,7 @@ predict.longituRF <- function(object, X,Z,id,time,...){
 	n <- length(unique(id))
 	id_btilde <- object$id_btilde
 	if(class(object$forest) == "BinaryTree"){
-		f <- predict(object$forest,as.data.frame(X))
+		f <- predict(object$forest, newdata = as.data.frame(X))
 		if(exists("beta", object)){
 			leaf <- unique(f)
 			nnodes <- length(object$beta)
@@ -448,7 +448,7 @@ predict.longituRF <- function(object, X,Z,id,time,...){
 			rm(aux)
 		}
 	} else {
-		f <- predict(object$forest,as.data.frame(X))
+		f <- predict(object$forest, newdata = as.data.frame(X))
 	}
 
 	Time <- object$time
