@@ -23,7 +23,7 @@ MERT(X, Y, id, Z, iter = 100, time, sto, delta = 0.001, conditional = FALSE)
 
 \item{delta}{[numeric]: The algorithm stops when the difference in log likelihood between two iterations is smaller than \code{delta}. The default value is set to O.O01}
 
-\item{conditional}{[logical]: Determines if the regression tree uses conditional inference trees as implemented by Hothorn et al. (2006) in \code{\link[party]{ctree}} (\code{TRUE}) or the usual regression trees as implemented in \code{[rpart]{rpart}}, being this case (\code{TRUE}) the default.}
+\item{conditional}{[logical]: Determines if the (S)MERT algorithm uses conditional inference trees as implemented by Hothorn et al. (2006) in \code{\link[party]{ctree}} (\code{TRUE}) or the usual regression trees as implemented in \code{[rpart]{rpart}}, being this case (\code{TRUE}) the default.}
 }
 \value{
 A fitted (S)MERT model which is a list of the following elements: \itemize{
@@ -71,7 +71,7 @@ Ahlem Hajjem, François Bellavance, and Denis Larocque (2011). Mixed effects reg
 
 Louis Capitaine, Robin Genuer, and Rodolphe Thiébaut (2020). Random forests for high-dimensional longitudinal data. Statistical Methods in Medical Research, 096228022094608. \doi{10.1177/0962280220946080}
 
-Leo Breiman (2001). Random Forests. Machine Learning, 45(1), 5–32.
+Breiman L., Friedman J. H., Olshen R. A., and Stone, C. J. (1984) Classification and Regression Trees. Wadsworth.
 
 Torsten Hothorn, Kurt Hornik and Achim Zeileis (2006). Unbiased Recursive Partitioning: A Conditional Inference Framework. Journal of Computational and Graphical Statistics, 15(3), 651--674.
 }
