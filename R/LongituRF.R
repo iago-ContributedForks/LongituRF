@@ -831,7 +831,7 @@ REEMforest <- function(X,Y,id,Z,iter=100,mtry=ceiling(ncol(X)/3),ntree=500, time
 
 				if(!conditional){
 					forest <- randomForest(as.data.frame(X), ystar,mtry=mtry,ntree=ntree, importance = TRUE, keep.inbag=TRUE)
-					f1 <- predict(forest, as.data.frame(X),nodes=TRUE)
+					f1 <- predict(forest, as.data.frame(X), predict.all = TRUE,nodes=TRUE)
 					# f1 == apply(predict(forest, as.data.frame(X), predict.all = TRUE)$individual, 1, mean)
 					trees <- attr(f1, "nodes")
 					inbag <- forest$inbag
@@ -932,7 +932,7 @@ REEMforest <- function(X,Y,id,Z,iter=100,mtry=ceiling(ncol(X)/3),ntree=500, time
 				}
 				if(!conditional){
 					forest <- randomForest(as.data.frame(X), ystar,mtry=mtry,ntree=ntree, importance = TRUE, keep.inbag=TRUE)
-					f1 <- predict(forest,as.data.frame(X),nodes=TRUE)
+					f1 <- predict(forest,as.data.frame(X), predict.all = TRUE,nodes=TRUE)
 					trees <- attr(f1, "nodes")
 					inbag <- forest$inbag
 					OOB[i] <- forest$mse[ntree]
@@ -1020,7 +1020,7 @@ REEMforest <- function(X,Y,id,Z,iter=100,mtry=ceiling(ncol(X)/3),ntree=500, time
 
 		if(!conditional){
 			forest <- randomForest(as.data.frame(X), ystar,mtry=mtry,ntree=ntree, importance = TRUE, keep.inbag=TRUE)
-			f1 <- predict(forest,as.data.frame(X),nodes=TRUE)
+			f1 <- predict(forest,as.data.frame(X), predict.all = TRUE,nodes=TRUE)
 			trees <- attr(f1, "nodes")
 			inbag <- forest$inbag
 			OOB[i] <- forest$mse[ntree]
@@ -2077,7 +2077,7 @@ opti.FBMreem <- function(X,Y,id,Z,iter,mtry,ntree,time,conditional){
 			}
 			if(!conditional){
 				forest <- randomForest(as.data.frame(X), ystar,mtry=mtry,ntree=ntree, keep.inbag=TRUE)
-				f1 <- predict(forest, as.data.frame(X), nodes=TRUE)
+				f1 <- predict(forest, as.data.frame(X), predict.all = TRUE, nodes=TRUE)
 				trees <- attr(f1, "nodes")
 				inbag <- forest$inbag
 			} else if (conditional){
