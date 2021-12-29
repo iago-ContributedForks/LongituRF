@@ -852,6 +852,7 @@ REEMforest <- function(X,Y,id,Z,iter=100,mtry=ceiling(ncol(X)/3),ntree=500, time
 				}
 
 				matrice.pred <- matrix(NA,length(Y),ntree)
+				# this matrix keeps the predictions for each observation in Y through all the trees where such observation is IN-BAG
 
 				beta <- vector(mode = "list", length = ntree)
 				for(k in 1:ntree){
@@ -872,6 +873,9 @@ REEMforest <- function(X,Y,id,Z,iter=100,mtry=ceiling(ncol(X)/3),ntree=500, time
 				for(k in 1:length(Y)){
 					w <- which(is.na(matrice.pred[k,]))
 					fhat[k] <- mean(matrice.pred[k,-w])
+					# this is the average of predictions of observation k through those trees which have k IN-BAG
+					# making fhat <- predict(forest, as.data.frame(X)) after modifying leaves with beta's
+					# would be for each observation k the average of the predictions through ALL the trees
 				}
 
 				for(k in 1:nind){ ### calcul des effets al?atoires par individu
