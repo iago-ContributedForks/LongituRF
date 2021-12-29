@@ -2078,7 +2078,7 @@ opti.FBMreem <- function(X,Y,id,Z,iter,mtry,ntree,time,conditional){
 			if(!conditional){
 				forest <- randomForest(as.data.frame(X), ystar,mtry=mtry,ntree=ntree, keep.inbag=TRUE)
 				f1 <- predict(forest, as.data.frame(X), nodes=TRUE)
-				trees <- attributes(f1)$nodes
+				trees <- attr(f1, "nodes")
 				inbag <- forest$inbag
 			} else if (conditional){
 				citdata <- cbind(ystar, as.data.frame(X))
