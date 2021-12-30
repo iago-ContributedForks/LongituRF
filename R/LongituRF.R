@@ -2396,3 +2396,32 @@ Stability_Score <- function(X,Y,Z,id,time,mtry,ntree, sto="BM",method="MERF", et
 }
 
 
+#' S3-generic function for predictions with party objects
+#'
+#' Computes the prediction of newdata by the given object
+#'
+#'
+#' @param object A BinaryTree-class or a RandomForest-class object from the party package
+#' @param newdata A data frame
+#'
+#'
+#' @return A numeric vector of predictions
+#'
+#' @keywords internal
+REEMpredict <- function(object, newdata){
+	UseMethod('REEMpredict')
+}
+
+REEMpredict.BinaryTree <- function(object, newdata){
+	RET <- .Call(party:::R_getpredictions, object@tree, object@get_where(newdata = newdata, mincriterion = 0))
+	RET <- structure(matrix(unlist(RET), ncol = 1), dimnames = list(NULL, names(object@responses@variables)))
+	return(RET)
+}
+
+REEMpredict.RandomForest <- function(object, newdata){
+	newdata <- newdata[, which(names(newdata) != names(object@responses@variables))]
+	pw <- object@prediction_weights(newdata = newdata)
+	RET <- lapply(pw, function(w) w %*% object@responses@predict_trafo / sum(w))
+	RET <- structure(matrix(unlist(RET), ncol = 1), dimnames = list(NULL, names(object@responses@variables)))
+	return(RET)
+}
