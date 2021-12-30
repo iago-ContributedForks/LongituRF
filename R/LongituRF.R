@@ -865,7 +865,11 @@ REEMforest <- function(X,Y,id,Z,iter=100,mtry=ceiling(ncol(X)/3),ntree=500, time
 						Phi[w,l] <- 1
 					}
 					oobags <- unique(which(inbag[,k]==0))
+					# beta is computed from In-Bag observations [-oobags]
 					beta[[k]] <- Moy_fbm(id[-oobags],Btilde,sigmahat,Phi[-oobags,],ystar[-oobags],Z[-oobags,,drop=FALSE],h,time[-oobags], sigma2)
+					# prediction is done with Out-Of-Bags observations [oobags]
+					# prediction with all observations would be: matrice.pred[,k] <- Phi %*% beta[[k]]
+					# use beta[[k]] <- forest$forest$nodepred[indii,k] in order to compute the actual forest-predictions through trees-averaging
 					matrice.pred[oobags,k] <- Phi[oobags,]%*%beta[[k]]
 				}
 
@@ -874,8 +878,9 @@ REEMforest <- function(X,Y,id,Z,iter=100,mtry=ceiling(ncol(X)/3),ntree=500, time
 					w <- which(is.na(matrice.pred[k,]))
 					fhat[k] <- mean(matrice.pred[k,-w])
 					# this is the average of predictions of observation k through those trees which have k IN-BAG
-					# making fhat <- predict(forest, as.data.frame(X)) after modifying leaves with beta's
-					# would be for each observation k the average of the predictions through ALL the trees
+					# making fhat <- predict(forest, as.data.frame(X)) after modifying leaves with beta's through  forest$forest$nodepred[indii,k] <- beta[[k]]
+					# would be for each observation k the average of the predictions through ALL the trees, which would be the same that
+					# fhat[k] <- mean(matrice.pred[k,])
 				}
 
 				for(k in 1:nind){ ### calcul des effets al?atoires par individu
@@ -2091,10 +2096,10 @@ opti.FBMreem <- function(X,Y,id,Z,iter,mtry,ntree,time,conditional){
 								 row.names = row.names(citdata),
 								 col.names = paste0("V", seq_len(ntree))))
 			}
-			K <- ntree
+
 
 			matrice.pred <- matrix(NA,length(Y),ntree)
-			for (k in 1:K){
+			for (k in 1:ntree){
 				indii <- unique(trees[,k])
 				nnodes <- length(indii)
 				Phi <- matrix(0,length(Y),nnodes)
