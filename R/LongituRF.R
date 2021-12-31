@@ -2380,7 +2380,7 @@ REEMpredict.randomForest <- function(object, newdata){
 
 
 REEMpredict.BinaryTree <- function(object, newdata){
-	RET <- .Call(party:::R_getpredictions, object@tree, object@get_where(newdata = newdata, mincriterion = 0))
+	RET <- .Call(party:::R_getpredictions, object@tree, object@get_where(newdata = newdata, mincriterion = 0), PACKAGE = "party")
 	RET <- structure(matrix(unlist(RET), ncol = 1), dimnames = list(NULL, names(object@responses@variables)))
 	return(RET)
 }
