@@ -433,24 +433,7 @@ gam_sto <- function(sigma,id,Z, Btilde, time, sigma2,sto, omega){
 predict.longituRF <- function(object, X,Z,id,time,...){
 	n <- length(unique(id))
 	id_btilde <- object$id_btilde
-	if(class(object$forest) == "BinaryTree"){
-		f <- predict(object$forest, newdata = as.data.frame(X))
-		if(exists("beta", object)){
-			leaf <- unique(f)
-			nnodes <- length(object$beta)
-			if(length(leaf) != nnodes){
-				stop("Distinct predicted values are not in 1:1 correspondence with tree leaves")
-			}
-			aux <- f
-			for(p in seq_len(nnodes)){
-				f[which(aux == leaf[p])] <- object$beta[p]
-			}
-			rm(aux)
-		}
-	} else {
-		f <- predict(object$forest, newdata = as.data.frame(X))
-	}
-
+	f <- REEMpredict(object$forest, newdata = as.data.frame(X))
 	Time <- object$time
 	id_btilde <- object$id_btilde
 	Ypred <- rep(0,length(id))
@@ -1030,15 +1013,15 @@ REEMforest <- function(X,Y,id,Z,iter=100,mtry=ceiling(ncol(X)/3),ntree=500, time
 			inbag <- forest$inbag
 			OOB[i] <- forest$mse[ntree]
 		}else{
-					citdata <- cbind(ystar, as.data.frame(X))
-					forest <- cforest(ystar ~ ., data = citdata, controls = cforest_unbiased(mtry = mtry, ntree = ntree))
-					f1 <- predict(forest, OOB = TRUE, type = "response")
-					trees <- as.matrix(as.data.frame(forest@where,
-									 row.names = row.names(citdata),
-									 col.names = paste0("V", seq_len(ntree))))
-					inbag <- as.matrix(as.data.frame(forest@weights,
-									 row.names = row.names(citdata),
-									 col.names = paste0("V", seq_len(ntree))))
+			citdata <- cbind(ystar, as.data.frame(X))
+			forest <- cforest(ystar ~ ., data = citdata, controls = cforest_unbiased(mtry = mtry, ntree = ntree))
+			f1 <- predict(forest, OOB = TRUE, type = "response")
+			trees <- as.matrix(as.data.frame(forest@where,
+							 row.names = row.names(citdata),
+							 col.names = paste0("V", seq_len(ntree))))
+			inbag <- as.matrix(as.data.frame(forest@weights,
+							 row.names = row.names(citdata),
+							 col.names = paste0("V", seq_len(ntree))))
 		}
 		matrice.pred <- matrix(NA,length(Y),ntree)
 
@@ -1324,18 +1307,18 @@ MERT <- function(X,Y,id,Z,iter=100,time, sto, delta = 0.001, conditional = FALSE
 
 # After
 # names(beta) <- unique(tree@where)
-# the next function (used as feed_leaves(tree@tree))  would allow to modify the terminal leaves of the conditional inference trees
+# the next function (used as feed_leaves(tree@tree,beta))  would allow to modify the terminal leaves of the conditional inference trees
 
-# feed_leaves <- function(ctobject, xstr = ""){
-#   xstr <- paste0(xstr, sub("ctobject", "", deparse(substitute(ctobject))))
-#   if(ctobject$terminal){
-#     xstr <- paste0(xstr, "$prediction")
-#     eval(parse(text = paste(xstr, "<<-", beta[[as.character(ctobject$nodeID)]])))
-#   } else {
-#     Recall(ctobject$left, xstr = xstr)
-#     Recall(ctobject$right, xstr = xstr)
-#   }
-# }
+feed_leaves <- function(ctobject, beta, xstr = ""){
+  xstr <- paste0(xstr, sub("ctobject", "", deparse(substitute(ctobject))))
+  if(ctobject$terminal){
+    xstr <- paste0(xstr, "$prediction")
+    eval(parse(text = paste(xstr, "<<-", beta[[as.character(ctobject$nodeID)]])))
+  } else {
+    Recall(ctobject$left, beta = beta, xstr = xstr)
+    Recall(ctobject$right, beta = beta, xstr = xstr)
+  }
+}
 
 # but it has none consequence on the prediction functions/methods predict/predict_response,
 # so it only changes the not easily accessible prediction values on the terminal nodes.
@@ -1465,11 +1448,19 @@ REEMtree <- function(X,Y,id,Z,iter=10, time, sto, delta = 0.001, conditional = F
 
 				beta <- Moy(id,Btilde,sigmahat,Phi,Y,Z) ### fit des feuilles
 
-				# Replace the predicted response at each terminal node of the tree with the estimated population level predicted response from the LMM fit
-				fhat <- feuilles
-				for(p in seq_len(nnodes)){
-					fhat[which(feuilles==leaf[p])] <- beta[p]
+				if(!conditional){
+					lee <- which(tree$frame[,"var"]=="<leaf>")
+					for(k in 1:nnodes){
+						ou <- which(tree$frame[,"yval"]==leaf[k])
+						w <- intersect(ou,lee)
+						tree$frame[w,"yval"] <- beta[k]
+					}
+				}else{
+					names(beta) <- unique(tree@where)
+					feed_leaves(tree@tree, beta = beta)
 				}
+				
+				fhat <- REEMpredict(tree, as.data.frame(X))
 
 
 				# through next steps update btilde and other parameters
@@ -1487,33 +1478,12 @@ REEMtree <- function(X,Y,id,Z,iter=10, time, sto, delta = 0.001, conditional = F
 				if(i > 1) inc <- (Vrai[i-1]-Vrai[i])/Vrai[i-1]
 				if(inc <  delta) {
 					print(paste0("stopped after ", i, " iterations."))
-					if(!conditional){
-						lee <- which(tree$frame[,"var"]=="<leaf>")
-						for(k in 1:nnodes){
-							ou <- which(tree$frame[,"yval"]==leaf[k])
-							w <- intersect(ou,lee)
-							tree$frame[w,"yval"] <- beta[k]
-						}
-						sortie <- list(forest=tree,random_effects=btilde,var_random_effects=Btilde,sigma=sigmahat, id_btilde=unique(id), sto= sto, vraisemblance = Vrai,id=id, time=time)
-					}else{
-						# the tree produces a non-correct prediction, it needs to be corrected with beta values
-						sortie <- list(forest=tree,beta=beta,random_effects=btilde,var_random_effects=Btilde,sigma=sigmahat, id_btilde=unique(id), sto= sto, vraisemblance = Vrai,id=id, time=time)
-					}
+					sortie <- list(forest=tree,random_effects=btilde,var_random_effects=Btilde,sigma=sigmahat, id_btilde=unique(id), sto= sto, vraisemblance = Vrai,id=id, time=time)
 					class(sortie) <- "longituRF"
 					return(sortie)
 				}
 			}
-			if(!conditional){
-				lee <- which(tree$frame[,"var"]=="<leaf>")
-				for(k in 1:nnodes){
-					ou <- which(tree$frame[,"yval"]==leaf[k])
-					w <- intersect(ou,lee)
-					tree$frame[w,"yval"] <- beta[k]
-				}
-				sortie <- list(forest=tree,random_effects=btilde,var_random_effects=Btilde,sigma=sigmahat, id_btilde=unique(id), sto= sto, Vraisemblance=Vrai, time =time, id=id )
-			}else{
-				sortie <- list(forest=tree,beta=beta,random_effects=btilde,var_random_effects=Btilde,sigma=sigmahat, id_btilde=unique(id), sto= sto, Vraisemblance=Vrai, time =time, id=id )
-			}
+			sortie <- list(forest=tree,random_effects=btilde,var_random_effects=Btilde,sigma=sigmahat, id_btilde=unique(id), sto= sto, Vraisemblance=Vrai, time =time, id=id )
 			class(sortie) <- "longituRF"
 			return(sortie)
 		}
@@ -1543,11 +1513,20 @@ REEMtree <- function(X,Y,id,Z,iter=10, time, sto, delta = 0.001, conditional = F
 
 		beta <- Moy_sto(id,Btilde,sigmahat,Phi,Y,Z,sto,time,sigma2) ### fit des feuilles
 
-		fhat <- feuilles
-		for(p in seq_len(nnodes)){
-			fhat[which(feuilles==leaf[p])] <- beta[p]
+		if(!conditional){
+		  lee <- which(tree$frame[,"var"]=="<leaf>")
+		  for(k in 1:nnodes){
+		    ou <- which(tree$frame[,"yval"]==leaf[k])
+		    w <- intersect(ou,lee)
+		    tree$frame[w,"yval"] <- beta[k]
+		  }
+		}else{
+		  names(beta) <- unique(tree@where)
+		  feed_leaves(tree@tree, beta = beta)
 		}
-
+		
+		fhat <- REEMpredict(tree, as.data.frame(X))
+		
 		for(k in 1:nind){ ### calcul des effets al?atoires par individu
 			indiv <- which(id==unique(id)[k])
 			K <- sto_analysis(sto,time[indiv])
@@ -1566,33 +1545,12 @@ REEMtree <- function(X,Y,id,Z,iter=10, time, sto, delta = 0.001, conditional = F
 		if(i > 1) inc <- (Vrai[i-1]-Vrai[i])/Vrai[i-1]
 		if(inc < delta) {
 			print(paste0("stopped after ", i, " iterations."))
-			if(!conditional){
-				lee <- which(tree$frame[,"var"]=="<leaf>")
-				for(k in 1:nnodes){
-					ou <- which(tree$frame[,"yval"]==leaf[k])
-					w <- intersect(ou,lee)
-					tree$frame[w,"yval"] <- beta[k]
-				}
-
-				sortie <- list(forest=tree,random_effects=btilde,var_random_effects=Btilde,sigma=sigmahat, id_btilde=unique(id), id_omega=id_omega, omega=omega, sigma_sto =sigma2, time = time, sto= sto,Vraisemblance=Vrai,id=id)
-			}else{
-				sortie <- list(forest=tree,beta=beta,random_effects=btilde,var_random_effects=Btilde,sigma=sigmahat, id_btilde=unique(id), id_omega=id_omega, omega=omega, sigma_sto =sigma2, time = time, sto= sto,Vraisemblance=Vrai,id=id)
-			}
+			sortie <- list(forest=tree,random_effects=btilde,var_random_effects=Btilde,sigma=sigmahat, id_btilde=unique(id), id_omega=id_omega, omega=omega, sigma_sto =sigma2, time = time, sto= sto,Vraisemblance=Vrai,id=id)
 			class(sortie) <- "longituRF"
 			return(sortie)
 		}
 	}
-	if(!conditional){
-		lee <- which(tree$frame[,"var"]=="<leaf>")
-		for(k in 1:nnodes){
-			ou <- which(tree$frame[,"yval"]==leaf[k])
-			w <- intersect(ou,lee)
-			tree$frame[w,"yval"] <- beta[k]
-		}
-		sortie <- list(forest=tree,random_effects=btilde,var_random_effects=Btilde,sigma=sigmahat, id_btilde=unique(id), id_omega=id_omega,omega=omega, sigma_sto =sigma2, time = time, sto= sto, Vraisemblance=Vrai, id=id)
-	} else if (conditional) {
-		sortie <- list(forest=tree,beta=beta,random_effects=btilde,var_random_effects=Btilde,sigma=sigmahat, id_btilde=unique(id), id_omega=id_omega,omega=omega, sigma_sto =sigma2, time = time, sto= sto, Vraisemblance=Vrai, id=id)
-	}
+	sortie <- list(forest=tree,random_effects=btilde,var_random_effects=Btilde,sigma=sigmahat, id_btilde=unique(id), id_omega=id_omega,omega=omega, sigma_sto =sigma2, time = time, sto= sto, Vraisemblance=Vrai, id=id)
 	class(sortie) <- "longituRF"
 	return(sortie)
 }
@@ -2411,6 +2369,15 @@ Stability_Score <- function(X,Y,Z,id,time,mtry,ntree, sto="BM",method="MERF", et
 REEMpredict <- function(object, newdata){
 	UseMethod('REEMpredict')
 }
+
+REEMpredict.rpart <- function(object, newdata){
+  predict(object = object, newdata = newdata)
+}
+
+REEMpredict.randomForest <- function(object, newdata){
+  predict(object = object, newdata = newdata)
+}
+
 
 REEMpredict.BinaryTree <- function(object, newdata){
 	RET <- .Call(party:::R_getpredictions, object@tree, object@get_where(newdata = newdata, mincriterion = 0))
