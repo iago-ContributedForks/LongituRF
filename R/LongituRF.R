@@ -763,7 +763,8 @@ Moy <- function(id,Btilde,sigmahat,Phi,Y,Z){
 #' SREEMF$omega # are the predicted stochastic processes.
 #' plot(SREEMF$Vraisemblance) #evolution of the log-likelihood.
 #' SREEMF$OOB # OOB error at each iteration.
-#' cSREEMF <- REEMforest(X=data$X,Y=data$Y,Z=data$Z,id=data$id,time=data$time,mtry=2,ntree=500,sto="BM",conditional=TRUE)
+#' cSREEMF <- REEMforest(X=data$X,Y=data$Y,Z=data$Z,id=data$id,time=data$time,mtry=2,ntree=500,
+#' sto="BM",conditional=TRUE)
 #' cSREEMF$forest # is the fitted random forest (obtained at the last iteration).
 #' cSREEMF$random_effects # are the predicted random effects for each individual.
 #' cSREEMF$omega # are the predicted stochastic processes.
@@ -1309,14 +1310,22 @@ MERT <- function(X,Y,id,Z,iter=100,time, sto, delta = 0.001, conditional = FALSE
 # names(beta) <- unique(tree@where)
 # the next function (used as feed_leaves(tree@tree,beta))  would allow to modify the terminal leaves of the conditional inference trees
 
-feed_leaves <- function(ctobject, beta, xstr = ""){
+#' Title
+#'
+#'
+#'
+#' @keywords internal
+feed_leaves <- function(ctobject, beta, xstr = "", trenvir = parent.frame()){
   xstr <- paste0(xstr, sub("ctobject", "", deparse(substitute(ctobject))))
   if(ctobject$terminal){
     xstr <- paste0(xstr, "$prediction")
-    eval(parse(text = paste(xstr, "<<-", beta[[as.character(ctobject$nodeID)]])))
+    # xstr <- paste0(xstr, "[[7]]")
+    eval(parse(text = paste(xstr, "<-", beta[[as.character(ctobject$nodeID)]])), envir = trenvir)
   } else {
-    Recall(ctobject$left, beta = beta, xstr = xstr)
-    Recall(ctobject$right, beta = beta, xstr = xstr)
+    Recall(ctobject$left, beta = beta, xstr = xstr, trenvir = trenvir)
+    # Recall(ctobject[[8]], beta = beta, xstr = xstr, trenvir = trenvir)
+    Recall(ctobject$right, beta = beta, xstr = xstr, trenvir = trenvir)
+    # Recall(ctobject[[9]], beta = beta, xstr = xstr, trenvir = trenvir)
   }
 }
 
@@ -1417,6 +1426,7 @@ REEMtree <- function(X,Y,id,Z,iter=10, time, sto, delta = 0.001, conditional = F
 	inc <- 1
 	id_omega=sto
 
+	self <- environment()
 	if(!is.logical(conditional) || length(conditional) != 1 || is.na(conditional)){
 		conditional <- FALSE
 	}
@@ -1457,7 +1467,7 @@ REEMtree <- function(X,Y,id,Z,iter=10, time, sto, delta = 0.001, conditional = F
 					}
 				}else{
 					names(beta) <- unique(tree@where)
-					feed_leaves(tree@tree, beta = beta)
+					feed_leaves(tree@tree, beta = beta, xstr = "", trenvir = self)
 				}
 				
 				fhat <- REEMpredict(tree, as.data.frame(X))
@@ -1522,7 +1532,7 @@ REEMtree <- function(X,Y,id,Z,iter=10, time, sto, delta = 0.001, conditional = F
 		  }
 		}else{
 		  names(beta) <- unique(tree@where)
-		  feed_leaves(tree@tree, beta = beta)
+		  feed_leaves(tree@tree, beta = beta, xstr = "", trenvir = self)
 		}
 		
 		fhat <- REEMpredict(tree, as.data.frame(X))

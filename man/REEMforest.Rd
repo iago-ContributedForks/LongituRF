@@ -79,7 +79,8 @@ SREEMF$random_effects # are the predicted random effects for each individual.
 SREEMF$omega # are the predicted stochastic processes.
 plot(SREEMF$Vraisemblance) #evolution of the log-likelihood.
 SREEMF$OOB # OOB error at each iteration.
-cSREEMF <- REEMforest(X=data$X,Y=data$Y,Z=data$Z,id=data$id,time=data$time,mtry=2,ntree=500,sto="BM",conditional=TRUE)
+cSREEMF <- REEMforest(X=data$X,Y=data$Y,Z=data$Z,id=data$id,time=data$time,mtry=2,ntree=500,
+sto="BM",conditional=TRUE)
 cSREEMF$forest # is the fitted random forest (obtained at the last iteration).
 cSREEMF$random_effects # are the predicted random effects for each individual.
 cSREEMF$omega # are the predicted stochastic processes.
