@@ -2376,28 +2376,38 @@ Stability_Score <- function(X,Y,Z,id,time,mtry,ntree, sto="BM",method="MERF", et
 #' @return A numeric vector of predictions
 #'
 #' @keywords internal
-REEMpredict <- function(object, newdata){
+REEMpredict <- function(object, newdata = NULL){
 	UseMethod('REEMpredict')
 }
 
-REEMpredict.rpart <- function(object, newdata){
-  predict(object = object, newdata = newdata)
+REEMpredict.rpart <- function(object, newdata = NULL){
+  if(is.null(newdata)){
+    predict(object = object)
+  }else{
+    predict(object = object, newdata = newdata)
+  }
 }
 
-REEMpredict.randomForest <- function(object, newdata){
-  predict(object = object, newdata = newdata)
+REEMpredict.randomForest <- function(object, newdata = NULL){
+  if(is.null(newdata)){
+    predict(object = object)
+  }else{
+    predict(object = object, newdata = newdata)
+  }
 }
 
 
-REEMpredict.BinaryTree <- function(object, newdata){
+REEMpredict.BinaryTree <- function(object, newdata = NULL){
 	RET <- .Call(party:::R_getpredictions, object@tree, object@get_where(newdata = newdata, mincriterion = 0), PACKAGE = "party")
 	RET <- structure(matrix(unlist(RET), ncol = 1), dimnames = list(NULL, names(object@responses@variables)))
 	return(RET)
 }
 
-REEMpredict.RandomForest <- function(object, newdata){
-	newdata <- newdata[, which(names(newdata) != names(object@responses@variables))]
-	pw <- object@prediction_weights(newdata = newdata)
+REEMpredict.RandomForest <- function(object, newdata = NULL){
+  if(!is.null(newdata)){
+    newdata <- newdata[, which(names(newdata) != names(object@responses@variables))]
+  }
+	pw <- object@prediction_weights(newdata = newdata, OOB = TRUE)
 	RET <- lapply(pw, function(w) w %*% object@responses@predict_trafo / sum(w))
 	RET <- structure(matrix(unlist(RET), ncol = 1), dimnames = list(NULL, names(object@responses@variables)))
 	return(RET)
