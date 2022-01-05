@@ -4,7 +4,7 @@
 \alias{opti.FBMreem}
 \title{Title}
 \usage{
-opti.FBMreem(X, Y, id, Z, iter, mtry, ntree, time, conditional)
+opti.FBMreem(X, Y, id, Z, iter, mtry, ntree, time)
 }
 \arguments{
 \item{X}{[matrix]}
@@ -22,8 +22,6 @@ opti.FBMreem(X, Y, id, Z, iter, mtry, ntree, time, conditional)
 \item{ntree}{[numeric]}
 
 \item{time}{[time]}
-
-\item{conditional}{[logical]}
 }
 \description{
 Title

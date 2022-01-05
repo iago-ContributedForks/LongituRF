@@ -17,7 +17,7 @@ Stability_Score(
   eta = c(1:ncol(X)),
   nvars = c(1:ncol(X)),
   cforest = FALSE,
-  conditionalVI = FALSE
+  conditionalVI = cforest
 )
 }
 \arguments{

@@ -14,8 +14,7 @@ REEMforest(
   ntree = 500,
   time,
   sto,
-  delta = 0.001,
-  conditional = FALSE
+  delta = 0.001
 )
 }
 \arguments{
@@ -38,8 +37,6 @@ REEMforest(
 \item{sto}{[character]: Defines the covariance function of the stochastic process, can be either \code{"none"} for no stochastic process, \code{"BM"} for Brownian motion, \code{OrnUhl} for standard Ornstein-Uhlenbeck process, \code{BBridge} for Brownian Bridge, \code{fbm} for Fractional Brownian motion; can also be a function defined by the user.}
 
 \item{delta}{[numeric]: The algorithm stops when the difference in log likelihood between two iterations is smaller than \code{delta}. The default value is set to O.O01}
-
-\item{conditional}{[logical]: Determines if the random forest algorithm is the one implemented by Breiman (2001) and available in \code{\link[randomForest]{randomForest}}, which is the default \code{FALSE}, or if it is the implemented by Strobl et al. (2007) using conditional inference trees in \code{\link[party]{cforest}}.}
 }
 \value{
 A fitted (S)REEMforest model which is a list of the following elements: \itemize{
@@ -53,7 +50,7 @@ A fitted (S)REEMforest model which is a list of the following elements: \itemize
 \item \code{sto: } Stochastic process used in the model.
 \item \code{Vraisemblance:} Log-likelihood of the different iterations.
 \item \code{id: } Vector of the identifiers for the different trajectories.
-\item \code{OOB: } OOB error of the fitted random forest at each iteration, only when \code{conditional=FALSE}.
+\item \code{OOB: } OOB error of the fitted random forest at each iteration.
 }
 }
 \description{
@@ -79,12 +76,6 @@ SREEMF$random_effects # are the predicted random effects for each individual.
 SREEMF$omega # are the predicted stochastic processes.
 plot(SREEMF$Vraisemblance) #evolution of the log-likelihood.
 SREEMF$OOB # OOB error at each iteration.
-cSREEMF <- REEMforest(X=data$X,Y=data$Y,Z=data$Z,id=data$id,time=data$time,mtry=2,ntree=500,
-sto="BM",conditional=TRUE)
-cSREEMF$forest # is the fitted random forest (obtained at the last iteration).
-cSREEMF$random_effects # are the predicted random effects for each individual.
-cSREEMF$omega # are the predicted stochastic processes.
-plot(cSREEMF$Vraisemblance) #evolution of the log-likelihood.
 }
 
 }
@@ -92,6 +83,4 @@ plot(cSREEMF$Vraisemblance) #evolution of the log-likelihood.
 Louis Capitaine, Robin Genuer, and Rodolphe Thiébaut (2020). Random forests for high-dimensional longitudinal data. Statistical Methods in Medical Research, 096228022094608. \doi{10.1177/0962280220946080}
 
 Leo Breiman (2001). Random Forests. Machine Learning, 45(1), 5–32.
-
-Carolin Strobl, Anne-Laure Boulesteix, Achim Zeileis and Torsten Hothorn (2007). Bias in Random Forest Variable Importance Measures: Illustrations, Sources and a Solution. BMC Bioinformatics, 8(25).
 }
