@@ -1534,8 +1534,8 @@ logV <- function(Y,f,Z,time,id,B,gamma,sigma, sto){
 		for (i in 1:length(unique(id))){
 			w <- which(id==unique(id)[i])
 			V <- Z[w,,drop=FALSE]%*%B%*%t(Z[w,,drop=FALSE])+diag(as.numeric(sigma),length(w),length(w))
-			V2 = log(det(V))+ t(Y[w]-f[w])%*%solve(V)%*%(Y[w]-f[w])
-			if (V2<Inf){
+			V2 <- log(det(V))+ t(Y[w]-f[w])%*%solve(V)%*%(Y[w]-f[w])
+			if (V2 < Inf){
 				Vraisem <- Vraisem + V2
 			}
 		}
